@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d10">
+  <meta name="description" content="新しい物と未来の支払いを増やさないための、個人用NO BUY記録アプリ。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ZERO ROOM">
+  <title>JULIUS ZERO ROOM</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-180.png">
+  <link rel="stylesheet" href="./styles.css?v=0.3.0">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" data-view="home" aria-label="ホームへ">
+        <span class="brand-j">J</span>
+        <span><b>JULIUS</b><em>ZERO ROOM</em></span>
+      </button>
+      <div class="topbar-actions">
+        <span class="sync-dot" id="syncDot" data-state="local" aria-hidden="true"></span>
+        <span class="sync-label" id="syncLabel">LOCAL</span>
+        <button class="icon-button" id="settingsButton" aria-label="設定と同期">•••</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="view active" id="homeView" aria-labelledby="homeTitle">
+        <div class="home-heading">
+          <div>
+            <span class="kicker">MONTHLY CONTROL</span>
+            <h1 id="homeTitle">ZEROを守る。</h1>
+          </div>
+          <span class="live-chip"><i></i> LIVE</span>
+        </div>
+
+        <section class="today-status" id="todayStatus" aria-labelledby="todayStatusTitle">
+          <div class="today-status-main">
+            <span>TODAY STATUS</span>
+            <strong id="todayStatusTitle">ZERO INTACT</strong>
+            <p id="todayStatusCopy">……まだゼロだ。そのまま守れ。</p>
+          </div>
+          <div class="today-status-facts">
+            <div><span>NEW AFTERPAY TODAY</span><b id="todayAfterpay">¥0</b></div>
+            <div><span>HOLD ACTIVE</span><b id="todayHolds">0件</b></div>
+          </div>
+        </section>
+
+        <section class="calendar-panel" aria-labelledby="calendarTitle">
+          <div class="calendar-head">
+            <button class="month-button" id="prevMonth" aria-label="前の月">←</button>
+            <div>
+              <span id="calendarYear">2026</span>
+              <h2 id="calendarTitle">SEPTEMBER</h2>
+            </div>
+            <button class="month-button" id="nextMonth" aria-label="次の月">→</button>
+          </div>
+          <div class="weekday-row" aria-hidden="true">
+            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div class="calendar-legend">
+            <span><i class="legend-no-buy">✓</i>NO BUY</span>
+            <span><i class="legend-purchase">¥</i>PURCHASE</span>
+            <span><i class="legend-unconfirmed">?</i>UNCONFIRMED</span>
+            <span><i class="legend-live"></i>TODAY</span>
+          </div>
+        </section>
+
+        <section class="metrics" aria-label="今月の記録">
+          <article class="metric-card primary-metric">
+            <span>NO BUY DAYS</span>
+            <strong><b id="noBuyCount">0</b><small id="monthDays">/ 30</small></strong>
+            <p>確定した日。途中で購入日があっても、過去の記録は消えない。</p>
+          </article>
+          <article class="metric-card afterpay-metric">
+            <span>NEW AFTERPAY</span>
+            <strong id="afterpayTotal">¥0</strong>
+            <p>今月、新しく未来へ回した支払い。</p>
+          </article>
+          <article class="metric-card urge-metric">
+            <span>STOPPED URGES</span>
+            <strong id="urgeCount">0</strong>
+            <p>衝動に一度、ブレーキをかけた回数。</p>
+          </article>
+          <article class="metric-card hold-metric" id="holdMetric">
+            <span>HOLD ACTIVE</span>
+            <strong id="holdCount">0</strong>
+            <p id="holdCopy">現在進行中の保留はない。</p>
+          </article>
+        </section>
+
+        <section class="action-panel" aria-label="今日の操作">
+          <button class="action-button urge-button" id="urgeButton">
+            <span class="action-symbol">!</span>
+            <span><b>欲しい！！</b><small>三つだけ答える</small></span>
+            <em>→</em>
+          </button>
+          <button class="action-button purchase-button" id="purchaseButton">
+            <span class="action-symbol">¥</span>
+            <span><b>買った。記録する</b><small>隠さず、事実だけ残す</small></span>
+            <em>→</em>
+          </button>
+          <button class="emergency-button" id="stopButton"><span>J</span>ジュリアス、止めろ</button>
+        </section>
+
+        <section class="julius-line" aria-live="polite">
+          <img src="./assets/julius/normal.png" alt="" width="72" height="72">
+          <div><span>JULIUS</span><p id="juliusLine">まず今日、新しい支払いを増やさない。それでいい。</p></div>
+        </section>
+      </section>
+
+      <section class="view" id="historyView" aria-labelledby="historyTitle">
+        <div class="section-heading">
+          <span class="kicker">MONTHLY ARCHIVE</span>
+          <h1 id="historyTitle">記録は消えない。</h1>
+          <p>勝った日も、買った日も、ただ事実として残す。</p>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+
+      <section class="view" id="recoveryView" aria-labelledby="recoveryTitle">
+        <div class="section-heading recovery-heading">
+          <span class="kicker">BALANCE RECOVERY</span>
+          <h1 id="recoveryTitle">穴を、少しずつ浅くする。</h1>
+          <p>現在表示されている残高を、そのまま記録する。購入履歴からは計算しない。</p>
+        </div>
+        <section class="recovery-overview" id="recoveryOverview"></section>
+        <section class="balance-entry">
+          <div class="balance-entry-copy">
+            <span class="kicker">NEW SNAPSHOT</span>
+            <h2>現在残高を更新</h2>
+            <p>支払い後、月初、気が向いた時。それで構わない。</p>
+          </div>
+          <form id="balanceForm">
+            <label class="field-label" for="balanceDate">確認日</label>
+            <input class="text-input" id="balanceDate" name="date" type="date" required>
+            <div class="balance-input-grid">
+              <label><span>MERPAY</span><div class="money-input small"><span>¥</span><input id="merpayBalance" name="merpay" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
+              <label><span>PAIDY</span><div class="money-input small"><span>¥</span><input id="paidyBalance" name="paidy" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
+            </div>
+            <div class="form-error" id="balanceError" role="alert"></div>
+            <button class="submit-button" type="submit">スナップショットを保存</button>
+          </form>
+        </section>
+        <section class="recovery-history-section">
+          <div class="subsection-head"><span class="kicker">SNAPSHOT HISTORY</span><h2>残高の推移</h2></div>
+          <div class="recovery-history" id="recoveryHistory"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="メインメニュー">
+      <button class="active" data-view="home"><span>01</span>HOME</button>
+      <button data-view="history"><span>02</span>HISTORY</button>
+      <button data-view="recovery"><span>03</span>RECOVERY</button>
+    </nav>
+  </div>
+
+  <div class="modal" id="dayModal" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
+    <div class="modal-card compact-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <span class="modal-kicker">DAILY CHECK</span>
+      <h2 id="dayModalTitle">昨日、趣味・衝動買いをしましたか？</h2>
+      <p id="dayModalDate"></p>
+      <div class="modal-actions vertical">
+        <button class="choice-button no-buy-choice" id="confirmNoBuy"><span>✓</span>しなかった！</button>
+        <button class="choice-button purchase-choice" id="confirmPurchase"><span>¥</span>した。記録する</button>
+      </div>
+      <button class="text-button" data-close>今は決めない</button>
+    </div>
+  </div>
+
+  <div class="modal" id="purchaseModal" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle">
+    <div class="modal-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <span class="modal-kicker">PURCHASE LOG</span>
+      <h2 id="purchaseTitle">いくら使った？</h2>
+      <p>責めるためではない。新しい支払いを正確に残す。</p>
+      <form id="purchaseForm">
+        <label class="field-label" for="purchaseAmount">金額 <em>必須</em></label>
+        <div class="money-input"><span>¥</span><input id="purchaseAmount" name="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="0" required></div>
+        <label class="field-label" for="purchaseDate">購入日</label>
+        <input class="text-input" id="purchaseDate" name="date" type="date" required>
+        <fieldset>
+          <legend>これはどんな買い物？</legend>
+          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>食料・日用品・仕事や生活に必要な物</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動買い</b><small>この場合だけ、その日はPURCHASEになる</small></span></label>
+        </fieldset>
+        <fieldset>
+          <legend>支払い方法</legend>
+          <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b><small>今月のNEW AFTERPAYには加算しない</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="afterpay"><span><b>後払い・分割を増やした</b><small>金額をNEW AFTERPAYへ加算する</small></span></label>
+        </fieldset>
+        <fieldset>
+          <legend>買ったもの</legend>
+          <div class="inline-radios">
+            <label class="radio-card"><input type="radio" name="medium" value="physical" checked><span><b>物理物</b></span></label>
+            <label class="radio-card"><input type="radio" name="medium" value="digital"><span><b>デジタル・課金</b></span></label>
+          </div>
+        </fieldset>
+        <label class="field-label" for="purchaseName">商品名 <small>任意・ホームには表示しない</small></label>
+        <input class="text-input" id="purchaseName" name="name" maxlength="80" autocomplete="off" placeholder="空欄で構わない">
+        <div class="form-error" id="purchaseError" role="alert"></div>
+        <button class="submit-button" type="submit">記録する</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="urgeModal" role="dialog" aria-modal="true" aria-labelledby="urgeTitle">
+    <div class="modal-card urge-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <div class="julius-portrait"><img id="urgePortrait" src="./assets/julius/think.png" alt="ジュリアス"></div>
+      <span class="modal-kicker">IMPULSE CHECK</span>
+      <h2 id="urgeTitle">……まだ買うな。三つだけ答えてくれ。</h2>
+      <div id="urgeQuestions"></div>
+      <div class="urge-result" id="urgeResult" hidden></div>
+    </div>
+  </div>
+
+  <div class="modal" id="stopModal" role="dialog" aria-modal="true" aria-labelledby="stopTitle">
+    <div class="modal-card stop-card">
+      <div class="julius-portrait large"><img src="./assets/julius/stern.png" alt="ジュリアス"></div>
+      <span class="modal-kicker">EMERGENCY BRAKE</span>
+      <h2 id="stopTitle">了解した。</h2>
+      <p>今日は買うな。<br>この衝動は明日に回せ。</p>
+      <div class="plus-one">STOPPED URGES <b>+1</b></div>
+      <button class="submit-button" data-close>戻る</button>
+    </div>
+  </div>
+
+  <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card settings-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <span class="modal-kicker">SETTINGS / SYNC</span>
+      <h2 id="settingsTitle">端末を待たせない同期。</h2>
+      <p>記録は先にこの端末へ保存する。クラウド処理中でもアプリはすぐ使える。</p>
+      <div id="cloudPanelBody"></div>
+      <div class="settings-actions">
+        <button class="secondary-button" id="exportButton">JSONバックアップ</button>
+        <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
+      </div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.3.0 CLOUD SYNC</div>
+    </div>
+  </div>
+
+  <div class="modal locked-modal" id="cloudChoiceModal" role="dialog" aria-modal="true" aria-labelledby="cloudChoiceTitle">
+    <div class="modal-card">
+      <span class="modal-kicker">FIRST SYNC</span>
+      <h2 id="cloudChoiceTitle">同期する記録を選ぶ。</h2>
+      <p>ローカルとクラウドを勝手に上書きしない。残す側を君が選べ。</p>
+      <div id="cloudChoiceBody"></div>
+    </div>
+  </div>
+
+  <div class="achievement" id="achievement" aria-live="assertive">
+    <span>NO BUY</span><strong>+1</strong><p>今日も、新しい支払いを増やさなかった。</p>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script defer src="./app.js?v=0.3.0"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script defer src="./firebase-config.js"></script>
+  <script defer src="./cloud-sync.js?v=0.3.0"></script>
+</body>
+</html>
