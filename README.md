@@ -1,4 +1,4 @@
-# JULIUS ZERO ROOM v0.4.0 · REALITY CHECK
+# JULIUS ZERO ROOM v0.5.0 · MONTHLY REALITY
 
 新しい物と未来の支払いを増やさないための、個人用NO BUY記録PWA。
 
@@ -8,9 +8,10 @@
 - 画面と記録は端末内データから即時に開き、Firebaseの応答を待たない。
 - オフライン中の変更は端末内の送信待ちキューへ保存し、再接続後に自動送信する。
 - Firebaseが使えない場合も、端末内保存・JSON書き出し・読み込みは動作する。
-- v0.3までの本番データは同じ保存キーから自動移行する。旧形式の後払いは支払い先を推測せず「旧：後払い先未設定」として残す。
+- v0.4までの本番データは同じ保存キーから自動移行する。旧「今月の収入 / 給料」は新しい予定収入へ勝手に加算せず、再確認を一度案内する。
+- 旧形式の後払いは支払い先を推測せず「旧：後払い先未設定」として残す。
 
-## v0.4機能
+## v0.5機能
 
 - PC・スマホ間のGoogleログイン同期
 - `days`、`purchases`、`urges`、`recovery`をID単位で個別同期
@@ -31,10 +32,15 @@
 - MONTHLY REALITYを含む編集可能データの `createdAt` / `updatedAt`
 - 削除マーカーをクラウドへ残し、別端末で削除済み記録が復活しにくい同期
 - ZERO ROOM専用の盾とゼロを組み合わせたPWAアイコン
+- `CURRENT CASH + EXPECTED INCOME REMAINING` から今月利用可能額を算出
+- 今月利用可能額から必須支払いを引き、予測不足額を「欲しい！！」と緊急停止へ反映
+- `NEXT SALARY` は参考値として保持し、今月の計算から除外
+- STOPPED URGESは累積、HOLD ACTIVEは翌日までという違いを明記
+- スマホの購入記録画面とRECOVERY対象月入力の横幅を補正
 
 ## Firestore保存先
 
-v0.4はv0.3の保存先を維持し、MONTHLY REALITY用のコレクションだけを追加する。
+v0.5はv0.3/v0.4の保存先を維持し、MONTHLY REALITYのレコード定義だけを更新する。
 
 ```text
 users/{uid}/zeroroomV3/meta

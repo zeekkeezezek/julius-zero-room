@@ -38,3 +38,31 @@ main{padding-top:34px}.view{display:none}.view.active{display:block;animation:vi
 .payment-tag{display:inline!important;font:800 9px/1 var(--mono)!important;letter-spacing:.04em}.payment-tag.merpay{color:#68d8c2}.payment-tag.paidy{color:#a99af8}.payment-tag.cash{color:#b7c0c8}.payment-tag.legacy{color:var(--orange)}.row-edit{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#11161b;color:#bdc5cc;font:700 9px/1 var(--mono);cursor:pointer}.row-edit:hover{border-color:var(--blue);color:var(--text)}.purchase-log-row{grid-template-columns:80px 1fr auto auto}.purchase-log-row div small{display:block;margin-top:4px}.recovery-row{grid-template-columns:105px 1fr 1fr 1fr auto}.recovery-row small{display:block;margin-top:5px;color:var(--muted);font-size:8px}.edit-actions{display:flex;flex-wrap:wrap;gap:8px}.edit-actions .submit-button{flex:1;min-width:190px}.danger-button{border-color:#744846;color:#f0aaa6}.danger-text{color:#d8918c}.stop-reality{margin-top:10px!important;padding:10px;border:1px solid rgba(231,131,125,.3);border-radius:9px;color:#f0aaa6!important;font-size:12px!important}
 @media(max-width:760px){.reality-heading{display:block}.month-picker{display:block;margin-top:16px}.reality-summary{grid-template-columns:1fr}.reality-summary>div{border-right:0;border-bottom:1px solid var(--line)}.reality-summary>div:nth-child(3){border-bottom:0}.reality-input-grid{grid-template-columns:1fr 1fr}.purchase-log-row{grid-template-columns:58px 1fr auto}.purchase-log-row>.row-edit{grid-column:2/-1;justify-self:end}.recovery-row{grid-template-columns:75px 1fr 1fr}.recovery-row .total-cell{grid-column:2/-1}.recovery-row>.row-edit{grid-column:3;justify-self:end}}
 @media(max-width:420px){.reality-input-grid{grid-template-columns:1fr}.monthly-reality{padding:17px}.reality-heading h2{font-size:21px}.edit-actions{display:grid}.edit-actions .submit-button{min-width:0}}
+
+/* v0.5 — EXPECTED INCOME / MOBILE WIDTH SAFETY */
+html,body{max-width:100%;overflow-x:hidden}
+.reality-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
+.reality-summary>div{min-width:0}
+.reality-summary>div:nth-child(3){border-right:1px solid var(--line)}
+.reality-summary>div:nth-child(5){border-right:0}
+.reality-summary span{min-height:2.5em;line-height:1.25;overflow-wrap:anywhere}
+.reality-summary strong{font-size:clamp(16px,2.2vw,24px)}
+.reality-summary .covered{background:transparent}
+.reality-summary .covered strong{color:var(--muted)}
+.reality-summary .needs-check strong{color:var(--orange)}
+.field-help{display:block;margin:7px 2px 0;color:var(--muted);font-size:9px;line-height:1.5}
+.migration-card .submit-button{margin-top:18px}
+.modal-card,.modal-card form,.monthly-reality,.reality-heading,.reality-heading>div,.month-picker,.reality-input-grid,.reality-input-grid>label,.balance-input-grid,.balance-input-grid>label,.money-input,.money-input input,.text-input,fieldset,.radio-card,.radio-card span{min-width:0;max-width:100%}
+.modal-card{overflow-x:hidden}
+.money-input{width:100%}
+.money-input input{flex:1;width:0}
+
+@media(max-width:760px){
+  .modal-card{width:100%;max-width:100vw}
+  .month-picker{width:100%;min-width:0;margin-top:16px}
+  .month-picker .text-input{display:block;width:100%;min-width:0;max-width:100%}
+  .reality-summary{grid-template-columns:1fr}
+  .reality-summary>div,.reality-summary>div:nth-child(3),.reality-summary>div:nth-child(5){border-right:0;border-bottom:1px solid var(--line)}
+  .reality-summary>div:nth-child(5){border-bottom:0}
+  .reality-summary span{min-height:0}
+}

@@ -1,11 +1,14 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.4.0';
+const APP_VERSION='0.5.0';
 const STORAGE_KEY='julius_zero_room_v1';
+const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
 const MONTH_NAMES=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 const JP_MONTH_NAMES=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+let pendingRealityMigration=false;
+let realityMigrationOffered=false;
 let data=loadStored(STORAGE_KEY,emptyData());
 let calendarCursor=startOfMonth(today());
 let selectedDay=null;
@@ -18,15 +21,16 @@ let urgeAnswers={};
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
 
-function emptyData(){return{version:4,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:Date.now()}}
+function emptyData(){return{version:5,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:Date.now()}}
 function normalize(input){
   const base=emptyData(),value=input&&typeof input==='object'?input:{};
+  if(value.monthlyReality&&Object.keys(value.monthlyReality).length&&(whole(value.version)<5||Object.values(value.monthlyReality).some(item=>item&&item.expectedIncomeVerified!==true)))pendingRealityMigration=true;
   base.days=value.days&&typeof value.days==='object'?Object.fromEntries(Object.entries(value.days).filter(([,item])=>item&&['no-buy','purchase'].includes(item.status)).map(([key,item])=>{const createdAt=Number(item.createdAt)||Number(item.confirmedAt)||1;return[key,{...item,id:item.id||key,createdAt,updatedAt:Number(item.updatedAt)||createdAt}]})):{};
   base.purchases=Array.isArray(value.purchases)?value.purchases.filter(p=>p&&p.id&&p.date&&Number(p.amount)>0).map(p=>{const createdAt=Number(p.createdAt)||1;const payment=['cash','merpay','paidy','legacy'].includes(p.payment)?p.payment:p.payment==='afterpay'?'legacy':'cash';return{...p,amount:Math.round(Number(p.amount)),payment,purpose:p.purpose==='essential'?'essential':'impulse',medium:p.medium==='digital'?'digital':'physical',name:String(p.name||''),createdAt,updatedAt:Number(p.updatedAt)||createdAt}}):[];
   base.stoppedUrges=Array.isArray(value.stoppedUrges)?value.stoppedUrges.filter(item=>item&&item.id).map(item=>{const createdAt=Number(item.createdAt)||1;return{...item,holdActive:item.holdActive!==false,expiresOn:item.expiresOn||nextDateKey(item.date),createdAt,updatedAt:Number(item.updatedAt)||createdAt}}):[];
   base.recoverySnapshots=Array.isArray(value.recoverySnapshots)?value.recoverySnapshots.filter(s=>s&&s.id&&s.date&&Number(s.merpay)>=0&&Number(s.paidy)>=0).map(s=>{const createdAt=Number(s.createdAt)||1;return{...s,merpay:Math.round(Number(s.merpay)),paidy:Math.round(Number(s.paidy)),createdAt,updatedAt:Number(s.updatedAt)||createdAt}}):[];
   const realitySource=value.monthlyReality&&typeof value.monthlyReality==='object'?value.monthlyReality:{};
-  base.monthlyReality=Object.fromEntries(Object.entries(realitySource).filter(([key,item])=>/^\d{4}-\d{2}$/.test(key)&&item).map(([key,item])=>{const createdAt=Number(item.createdAt)||1;return[key,{id:item.id||key,month:key,income:whole(item.income),currentCash:whole(item.currentCash),merpayDue:whole(item.merpayDue),paidyDue:whole(item.paidyDue),otherDue:whole(item.otherDue),nextSalary:whole(item.nextSalary),createdAt,updatedAt:Number(item.updatedAt)||createdAt}]}));
+  base.monthlyReality=Object.fromEntries(Object.entries(realitySource).filter(([key,item])=>/^\d{4}-\d{2}$/.test(key)&&item).map(([key,item])=>{const createdAt=Number(item.createdAt)||1;return[key,{id:item.id||key,month:key,expectedIncomeRemaining:whole(item.expectedIncomeRemaining),expectedIncomeVerified:item.expectedIncomeVerified===true,legacyIncome:whole(item.legacyIncome??item.income),currentCash:whole(item.currentCash),merpayDue:whole(item.merpayDue),paidyDue:whole(item.paidyDue),otherDue:whole(item.otherDue),nextSalary:whole(item.nextSalary),createdAt,updatedAt:Number(item.updatedAt)||createdAt}]}));
   base.syncTests=Array.isArray(value.syncTests)?value.syncTests.slice(-20):[];
   base.updatedAt=Number(value.updatedAt)||Date.now();
   const impulseDates=new Map();
@@ -38,7 +42,7 @@ function normalize(input){
 function whole(value){const number=Math.round(Number(value)||0);return Math.max(0,number)}
 function loadStored(key,fallback){try{const raw=localStorage.getItem(key);return raw?normalize(JSON.parse(raw)):normalize(fallback)}catch(_){return normalize(fallback)}}
 function save(options={}){
-  data.version=4;data.updatedAt=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  data.version=5;data.updatedAt=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   if(!options.cloudApply&&typeof window.cloudSyncLocalChanged==='function')window.cloudSyncLocalChanged();
 }
 function commit(message){save();renderAll();if(message)toast(message)}
@@ -60,7 +64,7 @@ function isFuture(key){return key>dateKey()}
 function isStarted(key){return key>=START_DATE}
 function isAfterpay(payment){return['merpay','paidy','legacy'].includes(payment)}
 function paymentLabel(payment){return payment==='merpay'?'MERPAY':payment==='paidy'?'PAIDY':payment==='legacy'?'旧：後払い先未設定':'CASH'}
-function activeHolds(){const key=dateKey();return data.stoppedUrges.filter(item=>item.holdActive!==false&&item.date<=key&&key<(item.expiresOn||nextDateKey(item.date)))}
+function activeHolds(key=dateKey()){return data.stoppedUrges.filter(item=>item.holdActive!==false&&item.date<=key&&key<(item.expiresOn||nextDateKey(item.date)))}
 function monthRecords(key){
   const noBuy=Object.entries(data.days).filter(([date,state])=>date.startsWith(key)&&state?.status==='no-buy').length;
   const purchases=data.purchases.filter(item=>item.date.startsWith(key));
@@ -100,7 +104,7 @@ function dayButton(day,state,key){
   if(key&&isStarted(key)&&!isFuture(key)){button.classList.add('actionable');button.setAttribute('aria-label',`${formatDate(key)} ${state}`);button.addEventListener('click',()=>openDayCheck(key))}return button;
 }
 function renderMetrics(){
-  const key=monthKey(calendarCursor),records=monthRecords(key),holds=activeHolds().length;document.getElementById('noBuyCount').textContent=records.noBuy;document.getElementById('monthDays').textContent=`/ ${daysInMonth(calendarCursor)}`;document.getElementById('afterpayTotal').textContent=money(records.afterpay);document.getElementById('newMerpay').textContent=signedMoney(records.merpay);document.getElementById('newPaidy').textContent=signedMoney(records.paidy);document.getElementById('legacyAfterpay').textContent=signedMoney(records.legacy);document.getElementById('legacyAfterpayRow').hidden=!records.legacy;document.getElementById('urgeCount').textContent=records.urges.length;document.getElementById('holdCount').textContent=holds;document.getElementById('holdCopy').textContent=holds?`購入衝動を${holds}件、翌日まで保留中。`:'現在進行中の保留はない。';document.getElementById('holdMetric').classList.toggle('active',holds>0);
+  const key=monthKey(calendarCursor),records=monthRecords(key),holds=activeHolds().length;document.getElementById('noBuyCount').textContent=records.noBuy;document.getElementById('monthDays').textContent=`/ ${daysInMonth(calendarCursor)}`;document.getElementById('afterpayTotal').textContent=money(records.afterpay);document.getElementById('newMerpay').textContent=signedMoney(records.merpay);document.getElementById('newPaidy').textContent=signedMoney(records.paidy);document.getElementById('legacyAfterpay').textContent=signedMoney(records.legacy);document.getElementById('legacyAfterpayRow').hidden=!records.legacy;document.getElementById('urgeCount').textContent=records.urges.length;document.getElementById('holdCount').textContent=holds;document.getElementById('holdCopy').textContent=holds?`現在進行中の保留が${holds}件。翌日には0へ戻る。`:'現在進行中の保留だけ。翌日には0へ戻る。';document.getElementById('holdMetric').classList.toggle('active',holds>0);
 }
 function renderHistory(){
   const list=document.getElementById('historyList'),keys=new Set([monthKey(today()),...Object.keys(data.days).map(d=>d.slice(0,7)),...data.purchases.map(p=>p.date.slice(0,7)),...data.stoppedUrges.map(u=>String(u.date).slice(0,7))]),months=[...keys].filter(k=>k>=START_DATE.slice(0,7)).sort().reverse();
@@ -123,18 +127,18 @@ function renderRecovery(){
   const dateInput=document.getElementById('balanceDate');dateInput.min=START_DATE;dateInput.max=dateKey();if(!dateInput.value)dateInput.value=dateKey();
 }
 function realityMonthValue(){return document.getElementById('realityMonth').value||monthKey(today())}
-function realityNumbers(item){const value=item||{};const required=whole(value.merpayDue)+whole(value.paidyDue)+whole(value.otherDue),cash=whole(value.currentCash),shortage=Math.min(0,cash-required);return{required,cash,shortage}}
+function realityNumbers(item){const value=item||{},cash=whole(value.currentCash),expected=whole(value.expectedIncomeRemaining),available=cash+expected,required=whole(value.merpayDue)+whole(value.paidyDue)+whole(value.otherDue),difference=available-required,shortage=Math.min(0,difference),covered=Math.max(0,difference);return{cash,expected,available,required,difference,shortage,covered}}
 function renderReality(){
   const monthInput=document.getElementById('realityMonth');if(!monthInput.value)monthInput.value=monthKey(today());const key=monthInput.value,item=data.monthlyReality[key],summary=document.getElementById('realitySummary');
-  if(!item){summary.innerHTML='<div><span>CURRENT CASH</span><strong>—</strong></div><div><span>REQUIRED PAYMENTS</span><strong>—</strong></div><div class="shortage"><span>SHORTAGE</span><strong>未登録</strong></div>';return}
-  const totals=realityNumbers(item);summary.innerHTML=`<div><span>CURRENT CASH</span><strong>${money(totals.cash)}</strong></div><div><span>REQUIRED PAYMENTS</span><strong>${money(totals.required)}</strong></div><div class="shortage ${totals.shortage<0?'danger':''}"><span>SHORTAGE</span><strong>${totals.shortage<0?signedMoney(totals.shortage):'不足なし'}</strong></div><small>来月の給料見込みは現在の購買力へ加算しない。最終更新 ${escapeHtml(formatUpdated(item.updatedAt))}</small>`;
+  if(!item){summary.innerHTML='<div><span>CURRENT CASH</span><strong>—</strong></div><div><span>EXPECTED INCOME REMAINING</span><strong>—</strong></div><div><span>AVAILABLE THIS MONTH</span><strong>—</strong></div><div><span>REQUIRED PAYMENTS</span><strong>—</strong></div><div class="shortage"><span>PROJECTED SHORTAGE</span><strong>未登録</strong></div>';return}
+  const totals=realityNumbers(item),needsCheck=!item.expectedIncomeVerified,resultLabel=totals.shortage<0?'PROJECTED SHORTAGE':'COVERED',resultValue=totals.shortage<0?signedMoney(totals.shortage):money(totals.covered);summary.innerHTML=`<div><span>CURRENT CASH</span><strong>${money(totals.cash)}</strong></div><div class="${needsCheck?'needs-check':''}"><span>EXPECTED INCOME REMAINING</span><strong>${needsCheck?'要確認':money(totals.expected)}</strong></div><div><span>AVAILABLE THIS MONTH</span><strong>${money(totals.available)}</strong></div><div><span>REQUIRED PAYMENTS</span><strong>${money(totals.required)}</strong></div><div class="shortage ${totals.shortage<0?'danger':'covered'}"><span>${resultLabel}</span><strong>${resultValue}</strong></div><small>${needsCheck?'「今月これから入る予定額」は未確認。旧収入額を除外して計算している。 ':''}来月の給料見込みは今月の計算へ加算しない。最終更新 ${escapeHtml(formatUpdated(item.updatedAt))}</small>`;
 }
 function loadRealityForm(){
-  const key=realityMonthValue(),item=data.monthlyReality[key]||{},form=document.getElementById('realityForm');['income','currentCash','merpayDue','paidyDue','otherDue','nextSalary'].forEach(name=>{form.elements[name].value=item[name]??''});document.getElementById('realityError').textContent='';renderReality();
+  const key=realityMonthValue(),item=data.monthlyReality[key]||{},form=document.getElementById('realityForm');['expectedIncomeRemaining','currentCash','merpayDue','paidyDue','otherDue','nextSalary'].forEach(name=>{form.elements[name].value=name==='expectedIncomeRemaining'&&item.id&&!item.expectedIncomeVerified?'':item[name]??''});document.getElementById('realityError').textContent='';renderReality();
 }
 function saveReality(event){
   event.preventDefault();const form=new FormData(event.currentTarget),key=realityMonthValue(),now=Date.now(),old=data.monthlyReality[key];if(!/^\d{4}-\d{2}$/.test(key)||key<START_DATE.slice(0,7)){document.getElementById('realityError').textContent='対象月を確認してくれ。';return}
-  const entry={id:key,month:key,income:whole(form.get('income')),currentCash:whole(form.get('currentCash')),merpayDue:whole(form.get('merpayDue')),paidyDue:whole(form.get('paidyDue')),otherDue:whole(form.get('otherDue')),nextSalary:whole(form.get('nextSalary')),createdAt:old?.createdAt||now,updatedAt:now};
+  const entry={id:key,month:key,expectedIncomeRemaining:whole(form.get('expectedIncomeRemaining')),expectedIncomeVerified:true,legacyIncome:whole(old?.legacyIncome),currentCash:whole(form.get('currentCash')),merpayDue:whole(form.get('merpayDue')),paidyDue:whole(form.get('paidyDue')),otherDue:whole(form.get('otherDue')),nextSalary:whole(form.get('nextSalary')),createdAt:old?.createdAt||now,updatedAt:now};
   data.monthlyReality[key]=entry;document.getElementById('realityError').textContent='';commit('MONTHLY REALITYを更新した。現実の数字は、君を止めるために使う。');
 }
 function resetBalanceForm(){editingSnapshotId=null;document.getElementById('balanceForm').reset();document.getElementById('balanceDate').value=dateKey();document.getElementById('balanceSubmit').textContent='スナップショットを保存';document.getElementById('cancelBalanceEdit').hidden=true;document.getElementById('deleteSnapshot').hidden=true;document.getElementById('balanceError').textContent=''}
@@ -171,7 +175,7 @@ function setJulius(message){document.getElementById('juliusLine').textContent=me
 const urgeQuestions=[{id:'need',text:'それは今日必要なものか？',answers:[['needed','必要'],['want','趣味・欲しいだけ']]},{id:'money',text:'今ある金だけで買えるか？',answers:[['cash','買える'],['afterpay','後払いが必要']]},{id:'space',text:'置く場所は既に空いているか？',answers:[['yes','ある'],['no','ない']]}];
 function currentReality(){return data.monthlyReality[monthKey(today())]||null}
 function realityCheck(){
-  const item=currentReality();if(!item)return{item:null,required:0,cash:0,shortage:0};return{item,...realityNumbers(item)};
+  const item=currentReality();if(!item)return{item:null,required:0,cash:0,expected:0,available:0,shortage:0,covered:0};return{item,...realityNumbers(item)};
 }
 function varied(list){return list[(data.stoppedUrges.length+today().getDate())%list.length]}
 function openUrge(){urgeAnswers={};document.getElementById('urgePortrait').src='./assets/julius/think.png';document.getElementById('urgeResult').hidden=true;renderUrgeQuestions();showModal('urgeModal')}
@@ -179,21 +183,21 @@ function renderUrgeQuestions(){document.getElementById('urgeQuestions').innerHTM
 function renderUrgeResult(){
   const want=urgeAnswers.need==='want',afterpay=urgeAnswers.money==='afterpay',noSpace=urgeAnswers.space==='no',reality=realityCheck(),veryDangerous=want&&afterpay&&reality.shortage<0,dangerous=afterpay||want||noSpace,result=document.getElementById('urgeResult');result.hidden=false;result.className=`urge-result ${dangerous?'danger':''}`;document.getElementById('urgePortrait').src=dangerous?'./assets/julius/stern.png':'./assets/julius/normal.png';
   let title='今すぐ決める必要はない。',lines=['今日は保留して、明日もう一度考えろ。'];
-  if(veryDangerous){title='駄目だ、ジーク。';lines=[`今月の支払い予定は${money(reality.required)}。現在の手持ちは${money(reality.cash)}。`,`支払いだけで${money(Math.abs(reality.shortage))}不足している。`,varied(['今見るべきなのは商品の割引額ではない。今月の不足額だ。','今月は既に支払い予定が手持ちを上回っている。ここへ新しい買い物を足す余裕はない。']), '商品ページを閉じろ。今日は買うな。']}
+  if(veryDangerous){title='駄目だ、ジーク。';lines=[`現在の手持ち${money(reality.cash)}と、今月これから入る予定額${money(reality.expected)}を合わせても、必須支払いに${money(Math.abs(reality.shortage))}足りない。`,varied(['今見るべきなのは商品の割引額ではない。今月の不足額だ。','今月は既に、予定収入を含めても必須支払いへ届かない。ここへ新しい買い物を足す余裕はない。']), '商品ページを閉じろ。今日は買うな。']}
   else if(afterpay){title='……許可できない。';lines=['後払いを増やさないためにZERO ROOMを作ったはずだ。','欲しい物が悪いのではない。今買うのが駄目だ。',varied(["『後払いなら払える』は、今の君には『払える』ではない。未来の給料へ支払いを送っているだけだ。",'安い商品と、今の君に買える商品は同じではない。','崩すのは財布ではなく、後払い返済額だ。'])]}
   else if(dangerous){title='今日は保留だ。';lines=[noSpace?'置く場所がない物を、今増やす理由はない。':'欲しいだけなら、今日である必要はない。',varied(['多少高くても、本当に使う物の方が、使わない安物より遥かに安い。','ZERO ROOMを作ったのは、今日その一周を始めないためだ。'])]}
   if(reality.item&&reality.item.nextSalary>0)lines.push('来月の給料は、今月の欲しい物のための金ではない。');
   result.innerHTML=`<h3>${escapeHtml(title)}</h3>${lines.map(line=>`<p>${escapeHtml(line)}</p>`).join('')}<button type="button" id="holdUrge">${dangerous?'今日は保留にする':'10分、保留にする'}</button>`;document.getElementById('holdUrge').addEventListener('click',()=>recordStoppedUrge('quiz',urgeAnswers));result.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function recordStoppedUrge(source,answers=null){const now=Date.now(),date=dateKey();data.stoppedUrges.push({id:uid('urge'),date,source,answers:answers?{...answers}:null,holdActive:true,expiresOn:nextDateKey(date),createdAt:now,updatedAt:now});hideModal(source==='quiz'?'urgeModal':'stopModal');commit('HOLD +1 · 衝動を翌日まで保留した。');setJulius('一度止まれた。それで十分だ。')}
-function emergencyStop(){const now=Date.now(),date=dateKey(),reality=realityCheck();data.stoppedUrges.push({id:uid('urge'),date,source:'emergency',answers:null,holdActive:true,expiresOn:nextDateKey(date),createdAt:now,updatedAt:now});commit();document.getElementById('stopReality').textContent=reality.shortage<0?`今月は既に${money(Math.abs(reality.shortage))}不足している。今日は買うな。`:'';showModal('stopModal');setJulius('今日は買うな。この衝動は明日に回せ。')}
+function emergencyStop(){const now=Date.now(),date=dateKey(),reality=realityCheck();data.stoppedUrges.push({id:uid('urge'),date,source:'emergency',answers:null,holdActive:true,expiresOn:nextDateKey(date),createdAt:now,updatedAt:now});commit();document.getElementById('stopReality').textContent=reality.shortage<0?`今月これから入る予定の金を含めても、必須支払いに${money(Math.abs(reality.shortage))}足りない。今日は買うな。`:'';showModal('stopModal');setJulius('今日は買うな。この衝動は明日に回せ。')}
 
 function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}}
 function toast(message){const box=document.getElementById('toast');clearTimeout(toastTimer);box.textContent=message;box.classList.add('show');toastTimer=setTimeout(()=>box.classList.remove('show'),3200)}
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function backup(){const payload={...data,app:'JULIUS ZERO ROOM',appVersion:APP_VERSION,exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`julius_zero_room_${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 async function importBackup(file){if(!file)return;try{const parsed=JSON.parse(await file.text());if(!parsed||(!parsed.days&&!parsed.purchases))throw new Error('invalid');if(!window.confirm('本番データをJSONの内容で置き換える。よいか？'))return;localStorage.setItem(`${STORAGE_KEY}_before_import`,JSON.stringify(data));data=normalize(parsed);commit('JSONバックアップを読み込んだ。')}catch(_){toast('このJSONは読み込めない。内容を確認してくれ。')}finally{document.getElementById('importInput').value=''}}
-function applyCloudData(payload){data=normalize(payload);localStorage.setItem(STORAGE_KEY,JSON.stringify(data));renderAll()}
+function applyCloudData(payload){data=normalize(payload);localStorage.setItem(STORAGE_KEY,JSON.stringify(data));renderAll();offerRealityMigration()}
 function setSyncState(state,label){const dot=document.getElementById('syncDot'),text=document.getElementById('syncLabel');dot.dataset.state=state;dot.title=label||state;text.textContent=String(label||state).toUpperCase()}
 
 function bindEvents(){
@@ -202,10 +206,12 @@ function bindEvents(){
   document.getElementById('balanceForm').addEventListener('submit',saveBalance);document.getElementById('cancelBalanceEdit').addEventListener('click',resetBalanceForm);document.getElementById('deleteSnapshot').addEventListener('click',()=>editingSnapshotId&&deleteSnapshot(editingSnapshotId));document.getElementById('realityForm').addEventListener('submit',saveReality);document.getElementById('realityMonth').addEventListener('change',loadRealityForm);
   document.getElementById('historyList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-purchase]');if(button)openPurchase(dateKey(),button.dataset.editPurchase)});document.getElementById('recoveryHistory').addEventListener('click',event=>{const button=event.target.closest('[data-edit-snapshot]');if(button)editSnapshot(button.dataset.editSnapshot)});
   document.getElementById('settingsButton').addEventListener('click',()=>{showModal('settingsModal');if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel()});document.getElementById('exportButton').addEventListener('click',backup);document.getElementById('importInput').addEventListener('change',event=>importBackup(event.target.files?.[0]));
+  document.getElementById('ackRealityMigration').addEventListener('click',()=>{localStorage.setItem(REALITY_MIGRATION_KEY,'1');hideModal('realityMigrationModal');setView('recovery');document.querySelector('.monthly-reality')?.scrollIntoView({behavior:'smooth',block:'start'})});
 }
-function offerPreviousDay(){const yesterday=new Date(today());yesterday.setDate(yesterday.getDate()-1);const key=dateKey(yesterday);if(isStarted(key)&&!data.days[key])setTimeout(()=>openDayCheck(key),450)}
+function offerRealityMigration(){if(pendingRealityMigration&&!realityMigrationOffered&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1'){realityMigrationOffered=true;setTimeout(()=>showModal('realityMigrationModal'),250)}}
+function offerPreviousDay(){if(pendingRealityMigration&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1')return;const yesterday=new Date(today());yesterday.setDate(yesterday.getDate()-1);const key=dateKey(yesterday);if(isStarted(key)&&!data.days[key])setTimeout(()=>openDayCheck(key),450)}
 function registerServiceWorker(){if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
 
-window.ZeroRoom={APP_VERSION,STORAGE_KEY,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState,showCloudChoice:body=>{document.getElementById('cloudChoiceBody').innerHTML=body;showModal('cloudChoiceModal')},hideCloudChoice:()=>hideModal('cloudChoiceModal')};
-bindEvents();renderAll();loadRealityForm();offerPreviousDay();registerServiceWorker();
+window.ZeroRoom={APP_VERSION,STORAGE_KEY,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState,showCloudChoice:body=>{document.getElementById('cloudChoiceBody').innerHTML=body;showModal('cloudChoiceModal')},hideCloudChoice:()=>hideModal('cloudChoiceModal')};
+bindEvents();renderAll();loadRealityForm();offerRealityMigration();offerPreviousDay();registerServiceWorker();
 })();

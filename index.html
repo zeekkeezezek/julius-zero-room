@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.4.0">
+  <link rel="stylesheet" href="./styles.css?v=0.5.0">
 </head>
 <body>
   <div class="app-shell">
@@ -86,12 +86,12 @@
           <article class="metric-card urge-metric">
             <span>STOPPED URGES</span>
             <strong id="urgeCount">0</strong>
-            <p>衝動に一度、ブレーキをかけた回数。</p>
+            <p>過去に一度でも止まれた回数。翌日以降も累積で残る。</p>
           </article>
           <article class="metric-card hold-metric" id="holdMetric">
             <span>HOLD ACTIVE</span>
             <strong id="holdCount">0</strong>
-            <p id="holdCopy">現在進行中の保留はない。</p>
+            <p id="holdCopy">現在進行中の保留だけ。翌日には0へ戻る。</p>
           </article>
         </section>
 
@@ -138,12 +138,12 @@
           <div class="reality-summary" id="realitySummary"></div>
           <form id="realityForm">
             <div class="reality-input-grid">
-              <label><span>今月の収入 / 給料</span><div class="money-input small"><span>¥</span><input name="income" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
-              <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>今月これから入る予定額</span><div class="money-input small"><span>¥</span><input name="expectedIncomeRemaining" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今月これから入る予定で、まだ手持ちには含まれていない金。</small></label>
+              <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今この瞬間の手持ち。既に受け取った給料も含む。</small></label>
               <label><span>MERPAY 支払予定</span><div class="money-input small"><span>¥</span><input name="merpayDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>PAIDY 支払予定</span><div class="money-input small"><span>¥</span><input name="paidyDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>その他の必須支払い</span><div class="money-input small"><span>¥</span><input name="otherDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
-              <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
+              <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div><small class="field-help">来月の参考値。今月の計算には含めない。</small></label>
             </div>
             <div class="form-error" id="realityError" role="alert"></div>
             <button class="submit-button" type="submit">MONTHLY REALITYを保存</button>
@@ -267,7 +267,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.4.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.5.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -280,16 +280,25 @@
     </div>
   </div>
 
+  <div class="modal locked-modal" id="realityMigrationModal" role="dialog" aria-modal="true" aria-labelledby="realityMigrationTitle">
+    <div class="modal-card compact-card migration-card">
+      <span class="modal-kicker">v0.5 DATA CHECK</span>
+      <h2 id="realityMigrationTitle">v0.5で計算方法を変更した。</h2>
+      <p>MONTHLY REALITYの項目定義が変更されました。「今月これから入る予定額」を確認してください。旧「今月の収入 / 給料」は誤って二重計上しないよう、新しい計算へ自動では加えていない。</p>
+      <button class="submit-button" id="ackRealityMigration" type="button">確認して入力し直す</button>
+    </div>
+  </div>
+
   <div class="achievement" id="achievement" aria-live="assertive">
     <span>NO BUY</span><strong>+1</strong><p>今日も、新しい支払いを増やさなかった。</p>
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script defer src="./app.js?v=0.4.0"></script>
+  <script defer src="./app.js?v=0.5.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.4.0"></script>
+  <script defer src="./cloud-sync.js?v=0.5.0"></script>
 </body>
 </html>

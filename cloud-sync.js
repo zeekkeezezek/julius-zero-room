@@ -44,7 +44,7 @@ function showChoice(remote){
 
 function stripCloudFields(record){const value=clean(record||{});delete value.deleted;delete value.updatedAtServer;delete value.writerId;return value}
 function bundlePayload(raw,updatedAt=0){
-  const payload={version:4,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:Number(updatedAt)||0};
+  const payload={version:5,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:Number(updatedAt)||0};
   for(const[type,map]of Object.entries(raw)){for(const[id,record]of Object.entries(map||{})){if(record.deleted)continue;const value=stripCloudFields(record);if(type==='days'||type==='monthlyReality')payload[type][id]=value;else payload[type].push(value);payload.updatedAt=Math.max(payload.updatedAt,Number(record.updatedAt)||0)}}return Z.normalize(payload);
 }
 async function readCollection(type){const snap=await state.base.collection(TYPES[type]).get({source:'server'}),map={};snap.forEach(doc=>{map[doc.id]=doc.data()});return map}
@@ -77,7 +77,7 @@ async function commitOps(ops){
 async function flush(){
   clearTimeout(state.timer);if(!state.user||!state.active||!state.initialized||state.saving)return;if(!navigator.onLine){setStatus('offline','OFFLINE');return}const ops=Object.values(state.pending);if(!ops.length){setStatus('synced','SYNCED');return}
   state.saving=true;setStatus('saving','SYNCING');
-  try{await commitOps(ops);const now=Date.now();await state.metaRef.set({schemaVersion:4,appVersion:Z.APP_VERSION,lastSyncAt:firebase.firestore.FieldValue.serverTimestamp(),lastSyncAtMs:now,lastWriterId:state.deviceId},{merge:true});for(const op of ops){const key=pendingKey(op.type,op.id);if(state.pending[key]?.queuedAt===op.queuedAt)delete state.pending[key]}savePending();state.lastSyncAt=now;saveLastSync();setStatus('synced','SYNCED')}
+  try{await commitOps(ops);const now=Date.now();await state.metaRef.set({schemaVersion:5,appVersion:Z.APP_VERSION,lastSyncAt:firebase.firestore.FieldValue.serverTimestamp(),lastSyncAtMs:now,lastWriterId:state.deviceId},{merge:true});for(const op of ops){const key=pendingKey(op.type,op.id);if(state.pending[key]?.queuedAt===op.queuedAt)delete state.pending[key]}savePending();state.lastSyncAt=now;saveLastSync();setStatus('synced','SYNCED')}
   catch(error){setStatus(navigator.onLine?'error':'offline',navigator.onLine?'ERROR':'OFFLINE',friendly(error))}
   finally{state.saving=false;renderPanel()}
 }
@@ -85,7 +85,7 @@ async function flush(){
 function remoteChangesToPayload(type,snapshot){
   const current=clean(Z.getData()),maps=recordMaps(current);let changed=false;
   for(const change of snapshot.docChanges()){if(change.doc.metadata.hasPendingWrites)continue;const id=change.doc.id,remote=change.doc.data(),key=pendingKey(type,id),pending=state.pending[key];if(pending&&Number(pending.updatedAt)>=Number(remote.updatedAt||0))continue;const local=maps[type][id];if(local&&Number(local.updatedAt||0)>Number(remote.updatedAt||0))continue;if(remote.deleted){if(maps[type][id]){delete maps[type][id];changed=true}}else{maps[type][id]=stripCloudFields(remote);changed=true}}
-  if(!changed)return null;return Z.normalize({version:4,days:maps.days,purchases:Object.values(maps.purchases),stoppedUrges:Object.values(maps.stoppedUrges),recoverySnapshots:Object.values(maps.recoverySnapshots),monthlyReality:maps.monthlyReality,syncTests:current.syncTests||[],updatedAt:Date.now()});
+  if(!changed)return null;return Z.normalize({version:5,days:maps.days,purchases:Object.values(maps.purchases),stoppedUrges:Object.values(maps.stoppedUrges),recoverySnapshots:Object.values(maps.recoverySnapshots),monthlyReality:maps.monthlyReality,syncTests:current.syncTests||[],updatedAt:Date.now()});
 }
 function listen(){
   stopListeners();
@@ -99,7 +99,7 @@ function mirrorOps(local,remotePayload){
   for(const type of Object.keys(TYPES)){const ids=new Set([...Object.keys(localMaps[type]),...Object.keys(remoteMaps[type])]);for(const id of ids){const record=localMaps[type][id];if(record)ops.push({type,id,record:{...clean(record),updatedAt:now},deleted:false,updatedAt:now,queuedAt:now});else ops.push({type,id,record:null,deleted:true,updatedAt:now,queuedAt:now})}}return ops;
 }
 async function mirrorLocalToCloud(local,remotePayload){
-  setStatus('saving','SYNCING');const ops=mirrorOps(local,remotePayload);await commitOps(ops);const now=Date.now();await state.metaRef.set({schemaVersion:4,appVersion:Z.APP_VERSION,lastSyncAt:firebase.firestore.FieldValue.serverTimestamp(),lastSyncAtMs:now,lastWriterId:state.deviceId,syncModel:'record-level-v4'},{merge:true});state.pending={};savePending();state.lastSyncAt=now;saveLastSync();activate();
+  setStatus('saving','SYNCING');const ops=mirrorOps(local,remotePayload);await commitOps(ops);const now=Date.now();await state.metaRef.set({schemaVersion:5,appVersion:Z.APP_VERSION,lastSyncAt:firebase.firestore.FieldValue.serverTimestamp(),lastSyncAtMs:now,lastWriterId:state.deviceId,syncModel:'record-level-v5'},{merge:true});state.pending={};savePending();state.lastSyncAt=now;saveLastSync();activate();
 }
 async function begin(user){
   stopListeners();state.user=user;state.base=state.db.doc(`users/${user.uid}/zeroroomV3/meta`);state.metaRef=state.base;state.legacyRef=state.db.doc(`users/${user.uid}/zeroroom/state`);state.pending=loadPending();state.lastSyncAt=loadLastSync();state.active=false;state.initialized=false;state.paused=false;state.initialChoice=false;setStatus('saving','SYNCING');
@@ -112,7 +112,7 @@ async function begin(user){
     showChoice(remote);
   }catch(error){setStatus(navigator.onLine?'error':'offline',navigator.onLine?'ERROR':'OFFLINE',friendly(error))}
 }
-function emptyPayload(){return Z.normalize({version:4,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:0})}
+function emptyPayload(){return Z.normalize({version:5,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:0})}
 async function chooseLocal(){if(!state.remoteChoice)return;try{safetyCopy(state.remoteChoice.payload,'cloud_before_local_adopt');await mirrorLocalToCloud(Z.getData(),state.remoteChoice.payload);Z.toast('この端末の記録をクラウドへ反映した。')}catch(error){setStatus('error','ERROR',friendly(error))}}
 async function chooseCloud(){if(!state.remoteChoice)return;try{safetyCopy(Z.getData(),'local_before_cloud_adopt');Z.replaceData(state.remoteChoice.payload);state.lastLocal=clean(Z.getData());if(state.remoteChoice.source==='legacy')await mirrorLocalToCloud(Z.getData(),emptyPayload());else activate();Z.toast('クラウドの記録をこの端末へ反映した。')}catch(error){setStatus('error','ERROR',friendly(error))}}
 function pause(){state.active=false;state.paused=true;state.initialChoice=false;Z.hideCloudChoice();setStatus('local','LOCAL')}
