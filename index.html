@@ -10,8 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="ZERO ROOM">
   <title>JULIUS ZERO ROOM</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./assets/icons/icon-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.3.0">
+  <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
+  <link rel="stylesheet" href="./styles.css?v=0.4.0">
 </head>
 <body>
   <div class="app-shell">
@@ -79,6 +80,7 @@
           <article class="metric-card afterpay-metric">
             <span>NEW AFTERPAY</span>
             <strong id="afterpayTotal">¥0</strong>
+            <div class="afterpay-breakdown"><span>MERPAY <b id="newMerpay">+¥0</b></span><span>PAIDY <b id="newPaidy">+¥0</b></span><span id="legacyAfterpayRow" hidden>旧記録 <b id="legacyAfterpay">+¥0</b></span></div>
             <p>今月、新しく未来へ回した支払い。</p>
           </article>
           <article class="metric-card urge-metric">
@@ -128,6 +130,25 @@
           <h1 id="recoveryTitle">穴を、少しずつ浅くする。</h1>
           <p>現在表示されている残高を、そのまま記録する。購入履歴からは計算しない。</p>
         </div>
+        <section class="monthly-reality" aria-labelledby="realityTitle">
+          <div class="reality-heading">
+            <div><span class="kicker">MONTHLY REALITY</span><h2 id="realityTitle">今月の現実を記録する。</h2><p>余裕を探すためではない。危険な時に、現在地へ戻るための数字だ。</p></div>
+            <label class="month-picker"><span>対象月</span><input class="text-input" id="realityMonth" type="month" min="2026-09"></label>
+          </div>
+          <div class="reality-summary" id="realitySummary"></div>
+          <form id="realityForm">
+            <div class="reality-input-grid">
+              <label><span>今月の収入 / 給料</span><div class="money-input small"><span>¥</span><input name="income" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
+              <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>MERPAY 支払予定</span><div class="money-input small"><span>¥</span><input name="merpayDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>PAIDY 支払予定</span><div class="money-input small"><span>¥</span><input name="paidyDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>その他の必須支払い</span><div class="money-input small"><span>¥</span><input name="otherDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
+              <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
+            </div>
+            <div class="form-error" id="realityError" role="alert"></div>
+            <button class="submit-button" type="submit">MONTHLY REALITYを保存</button>
+          </form>
+        </section>
         <section class="recovery-overview" id="recoveryOverview"></section>
         <section class="balance-entry">
           <div class="balance-entry-copy">
@@ -143,7 +164,7 @@
               <label><span>PAIDY</span><div class="money-input small"><span>¥</span><input id="paidyBalance" name="paidy" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
             </div>
             <div class="form-error" id="balanceError" role="alert"></div>
-            <button class="submit-button" type="submit">スナップショットを保存</button>
+            <div class="edit-actions"><button class="submit-button" id="balanceSubmit" type="submit">スナップショットを保存</button><button class="secondary-button" id="cancelBalanceEdit" type="button" hidden>編集をやめる</button><button class="secondary-button danger-button" id="deleteSnapshot" type="button" hidden>この記録を削除</button></div>
           </form>
         </section>
         <section class="recovery-history-section">
@@ -171,6 +192,7 @@
         <button class="choice-button purchase-choice" id="confirmPurchase"><span>¥</span>した。記録する</button>
       </div>
       <button class="text-button" data-close>今は決めない</button>
+      <button class="text-button danger-text" id="clearDayStatus">未確定へ戻す</button>
     </div>
   </div>
 
@@ -193,7 +215,8 @@
         <fieldset>
           <legend>支払い方法</legend>
           <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b><small>今月のNEW AFTERPAYには加算しない</small></span></label>
-          <label class="radio-card"><input type="radio" name="payment" value="afterpay"><span><b>後払い・分割を増やした</b><small>金額をNEW AFTERPAYへ加算する</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>メルペイ後払い・分割</b><small>NEW MERPAYへ加算する</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>Paidy後払い・分割</b><small>NEW PAIDYへ加算する</small></span></label>
         </fieldset>
         <fieldset>
           <legend>買ったもの</legend>
@@ -205,7 +228,7 @@
         <label class="field-label" for="purchaseName">商品名 <small>任意・ホームには表示しない</small></label>
         <input class="text-input" id="purchaseName" name="name" maxlength="80" autocomplete="off" placeholder="空欄で構わない">
         <div class="form-error" id="purchaseError" role="alert"></div>
-        <button class="submit-button" type="submit">記録する</button>
+        <div class="edit-actions"><button class="submit-button" id="purchaseSubmit" type="submit">記録する</button><button class="secondary-button" id="deletePurchase" type="button" hidden>この記録を削除</button></div>
       </form>
     </div>
   </div>
@@ -227,6 +250,7 @@
       <span class="modal-kicker">EMERGENCY BRAKE</span>
       <h2 id="stopTitle">了解した。</h2>
       <p>今日は買うな。<br>この衝動は明日に回せ。</p>
+      <p class="stop-reality" id="stopReality"></p>
       <div class="plus-one">STOPPED URGES <b>+1</b></div>
       <button class="submit-button" data-close>戻る</button>
     </div>
@@ -243,7 +267,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.3.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.4.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -261,11 +285,11 @@
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script defer src="./app.js?v=0.3.0"></script>
+  <script defer src="./app.js?v=0.4.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.3.0"></script>
+  <script defer src="./cloud-sync.js?v=0.4.0"></script>
 </body>
 </html>
