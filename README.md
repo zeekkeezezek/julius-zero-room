@@ -1,4 +1,4 @@
-# JULIUS ZERO ROOM v0.5.0 · MONTHLY REALITY
+# JULIUS ZERO ROOM v0.6.0 · FIXED COMMITMENTS
 
 新しい物と未来の支払いを増やさないための、個人用NO BUY記録PWA。
 
@@ -11,7 +11,7 @@
 - v0.4までの本番データは同じ保存キーから自動移行する。旧「今月の収入 / 給料」は新しい予定収入へ勝手に加算せず、再確認を一度案内する。
 - 旧形式の後払いは支払い先を推測せず「旧：後払い先未設定」として残す。
 
-## v0.5機能
+## 維持する機能
 
 - PC・スマホ間のGoogleログイン同期
 - `days`、`purchases`、`urges`、`recovery`をID単位で個別同期
@@ -40,7 +40,7 @@
 
 ## Firestore保存先
 
-v0.5はv0.3/v0.4の保存先を維持し、MONTHLY REALITYのレコード定義だけを更新する。
+v0.6も既存の保存先を維持し、固定項目の個別コレクションを追加する。
 
 ```text
 users/{uid}/zeroroomV3/meta
@@ -48,7 +48,8 @@ users/{uid}/zeroroomV3/meta
   ├─ purchases/{purchaseId}
   ├─ urges/{urgeId}
   ├─ recovery/{snapshotId}
-  └─ reality/{YYYY-MM}
+  ├─ reality/{YYYY-MM}
+  └─ fixedCommitments/{fixedId}
 ```
 
 初回だけ旧 `users/{uid}/zeroroom/state` を読み込み、内容があればv0.3形式へ移行する。旧データを即座に削除はしない。
@@ -65,3 +66,18 @@ users/{uid}/zeroroomV3/meta
 6. 片方をオフラインにして記録し、再接続後に両端末へ反映されることを確認する。
 
 ローカルファイルとして直接開いた場合、記録機能は使えるがGoogleログインとPWAは無効。クラウド同期確認にはHTTPSが必要だ。
+
+## v0.6 固定支出のルール
+
+- 購入区分は必要品／事前登録済み固定支出／趣味・衝動買い。既存記録は自動で固定扱いへ変更しない。
+- RECOVERYで月別・項目別に名称、金額、FIXED SERVICE／FIXED GAME PASSを登録・編集・削除する。サンプル項目は勝手に登録しない。
+- 月途中・過去月の追加、別月への移動、名称・分類の差し替えや増額は、事前の予定だったことを強く確認する。
+- REGISTEREDとRECORDEDは事実の集計のみ。残り予算、転用、繰り越し、購入を促す通知は作らない。
+- 購入画面では購入月の登録項目から選ぶ。同じ項目の二重記録を避け、金額訂正はHISTORYで行う。
+- 固定だけの日は衝動PURCHASEにしない。S／Pバッジを表示し、NO BUYは従来通りDAILY CHECKで確定する。薄い✓は固定のみ記録された未確定日。
+- 固定でもMERPAY／PAIDY、NEW AFTERPAY、NEW SINCE LAST CHECK、ESTIMATEDへ通常通り加算する。
+- 固定登録額をCURRENT REQUIRED PAYMENTSへ自動加算しない。支払い時期が異なり、二重計上になるため。
+- 記録済み状態は関連購入から毎回算出する。別端末での追加・編集・削除にも追従する。
+- 登録項目を削除・別月へ移動しても、実際の購入日・支払額・記録時の分類は履歴に保持する。登録総額だけが変わり、過去の支出は消えない。
+- 固定項目と購入の関連ID・記録時名称・分類はJSONバックアップ／Firebase同期に含む。
+- 旧版で新しい固定購入を編集しないよう、PCとスマホの両方でv0.6への更新を確認してから使う。

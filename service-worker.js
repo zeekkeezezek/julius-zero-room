@@ -1,5 +1,5 @@
-const CACHE='julius-zero-room-v0-5-0';
-const SHELL=['./','./index.html','./styles.css?v=0.5.0','./app.js?v=0.5.0','./manifest.json','./firebase-config.js','./cloud-sync.js?v=0.5.0','./assets/icons/icon-zero-v04-180.png','./assets/icons/icon-zero-v04-192.png','./assets/icons/icon-zero-v04-512.png','./assets/julius/normal.png','./assets/julius/think.png','./assets/julius/stern.png'];
+const CACHE='julius-zero-room-v0-6-0';
+const SHELL=['./','./index.html','./styles.css?v=0.6.0','./app.js?v=0.6.0','./manifest.json','./firebase-config.js','./cloud-sync.js?v=0.6.0','./assets/icons/icon-zero-v04-180.png','./assets/icons/icon-zero-v04-192.png','./assets/icons/icon-zero-v04-512.png','./assets/julius/normal.png','./assets/julius/think.png','./assets/julius/stern.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE&&key.startsWith('julius-zero-room-')).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
