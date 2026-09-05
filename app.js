@@ -113,7 +113,7 @@ function dayButton(day,state,key){
   const caution=data.purchases.some(p=>p.date===key&&p.purpose==='caution'),fixed=data.purchases.filter(p=>p.date===key&&p.purpose==='fixed'),service=fixed.some(p=>p.fixedCategory==='service'),pass=fixed.some(p=>p.fixedCategory==='game-pass'),provisional=(fixed.length||caution)&&!state.includes('purchase')&&!state.includes('no-buy');
   if(fixed.length||caution)button.classList.add('has-fixed');
   const mark=state.includes('purchase')?'¥':state.includes('no-buy')||provisional?'✓':state==='unconfirmed'?'?':'';
-  button.innerHTML=`<span class="day-number">${day}</span>${mark?`<span class="day-mark ${provisional?'provisional':''}">${mark}</span>`:''}${fixed.length||caution?`<span class="fixed-day-badges">${service?'<span>S</span>':''}${pass?'<span>P</span>':''}${caution?'<span class="caution-badge">C</span>':''}</span>`:''}`;
+  button.innerHTML=`<span class="day-number">${day}</span>${mark?`<span class="day-mark ${provisional?'provisional':''}">${mark}</span>`:''}${fixed.length||caution?`<span class="fixed-day-badges ${service&&pass&&caution?'three-badges':''}">${service?'<span>S</span>':''}${pass?'<span>P</span>':''}${caution?'<span class="caution-badge">C</span>':''}</span>`:''}`;
   if(key&&isStarted(key)&&!isFuture(key)){button.classList.add('actionable');button.setAttribute('aria-label',`${formatDate(key)} ${state}${service?' FIXED SERVICEあり':''}${pass?' FIXED GAME PASSあり':''}${caution?' CAUTION SPENDあり':''}${provisional?' 記録上は衝動なし・NO BUY未確定':''}`);button.addEventListener('click',()=>openDayCheck(key))}return button;
 }
 function renderCautionSummary(records){

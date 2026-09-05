@@ -121,4 +121,5 @@ select:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .estimate-chip{font:600 9px/1.5 var(--mono);padding:4px 7px;border:1px solid var(--line);border-radius:5px;color:var(--muted)}
 .cloud-data-size p{flex-basis:100%;font-size:10px;line-height:1.7;color:var(--muted);margin:0}
 .legend-caution,.fixed-day-badges>.caution-badge{border:1px solid #9b8354;color:#dfc487}
-@media(max-width:420px){.caution-summary{padding:15px}.caution-summary dl{grid-template-columns:1fr;gap:8px}.caution-summary dl>div{display:flex;justify-content:space-between;gap:10px}.caution-summary dd{margin:0}.fixed-day-badges{left:2px;gap:1px}.fixed-day-badges>span{width:9px;height:11px;font-size:8px}.payment-warning{padding:12px}}
+@media(max-width:420px){.caution-summary{padding:15px}.caution-summary dl{grid-template-columns:1fr;gap:8px}.caution-summary dl>div{display:flex;justify-content:space-between;gap:10px}.caution-summary dd{margin:0}.payment-warning{padding:12px}}
+@media(max-width:760px){.fixed-day-badges.three-badges{left:1px;gap:1px}.fixed-day-badges.three-badges>span{width:9px;height:11px;font-size:8px}}
