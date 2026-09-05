@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.6.0">
+  <link rel="stylesheet" href="./styles.css?v=0.7.0">
 </head>
 <body>
   <div class="app-shell">
@@ -69,7 +69,8 @@
             <span><i class="legend-unconfirmed">?</i>UNCONFIRMED</span>
             <span><i class="legend-live"></i>TODAY</span>
             <span><i class="legend-fixed">S</i>FIXED SERVICE</span><span><i class="legend-fixed">P</i>FIXED GAME PASS</span>
-            <span class="provisional-legend">薄い✓：固定のみ記録・NO BUYは未確定</span>
+            <span><i class="legend-caution">C</i>CAUTION SPEND</span>
+            <span class="provisional-legend">薄い✓：固定・注意支出のみ記録。NO BUYはDAILY CHECKで確定</span>
           </div>
         </section>
 
@@ -77,7 +78,7 @@
           <article class="metric-card primary-metric">
             <span>NO BUY DAYS</span>
             <strong><b id="noBuyCount">0</b><small id="monthDays">/ 30</small></strong>
-            <p>予定外の趣味・衝動買いをしなかった日。必要品・事前登録済み固定支出とは分ける。</p>
+            <p>予定外の趣味・衝動買いをしなかった日。必要品・固定支出・注意支出とは分ける。</p>
           </article>
           <article class="metric-card afterpay-metric">
             <span>NEW AFTERPAY</span>
@@ -95,6 +96,12 @@
             <strong id="holdCount">0</strong>
             <p id="holdCopy">現在進行中の保留だけ。翌日には0へ戻る。</p>
           </article>
+        </section>
+
+        <section class="caution-summary" aria-label="表示月の注意支出">
+          <div class="caution-summary-head"><span>CAUTION SPEND <small>表示月の実績</small></span><strong id="cautionTotal">¥0</strong></div>
+          <dl><div><dt>SNACK</dt><dd id="cautionSnack">¥0</dd></div><div><dt>OPTIONAL DAILY GOODS</dt><dd id="cautionGoods">¥0</dd></div><div><dt>OTHER CAUTION</dt><dd id="cautionOther">¥0</dd></div></dl>
+          <p>一回は少額でも、月で見れば支出だ。</p>
         </section>
 
         <section class="action-panel" aria-label="今日の操作">
@@ -230,10 +237,20 @@
         <input class="text-input" id="purchaseDate" name="date" type="date" required>
         <fieldset>
           <legend>これはどんな買い物？</legend>
-          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>食料・日用品・仕事や生活に必要な物</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>必要な食事・飲料（NECESSARY FOOD）、洗剤・衛生用品などの必需品（ESSENTIAL DAILY GOODS）</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="caution"><span><b>CAUTION SPEND / 注意支出</b><small>お菓子・間食・必須ではない百均用品や便利グッズ</small></span></label>
           <label class="radio-card"><input type="radio" name="purpose" value="fixed"><span><b>事前登録済み固定支出</b><small>登録したサービス・月パスのみ。後払いは通常通り加算</small></span></label>
           <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動買い</b><small>予定外の趣味支出・単発ゲーム課金。その日はPURCHASEになる</small></span></label>
         </fieldset>
+        <div id="cautionPurchaseFields" class="caution-purchase-fields" hidden>
+          <label class="field-label" for="purchaseCautionCategory">注意支出の分類</label>
+          <select class="text-input" id="purchaseCautionCategory" name="cautionCategory" disabled>
+            <option value="snack">SNACK / COMFORT FOOD</option>
+            <option value="optional-daily-goods">OPTIONAL DAILY GOODS</option>
+            <option value="other">OTHER CAUTION</option>
+          </select>
+          <p class="fixed-policy">お菓子・ジュース・間食はSNACK。必須ではない日用品・収納・予備はOPTIONAL DAILY GOODS。それ以外はOTHER CAUTION。予定外の趣味物・追加課金は「趣味・衝動買い」で記録する。</p>
+        </div>
         <div id="fixedPurchaseFields" class="fixed-purchase-fields" hidden>
           <label class="field-label" for="purchaseFixedId">この月の事前登録項目</label>
           <select class="text-input" id="purchaseFixedId" name="fixedCommitmentId" disabled><option value="">支払った登録項目を選ぶ</option></select>
@@ -245,6 +262,14 @@
           <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>メルペイ後払い・分割</b><small>NEW MERPAYへ加算する</small></span></label>
           <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>Paidy後払い・分割</b><small>NEW PAIDYへ加算する</small></span></label>
         </fieldset>
+        <section id="paymentWarning" class="payment-warning" aria-labelledby="paymentWarningTitle" hidden>
+          <span class="modal-kicker">PAYMENT WARNING</span>
+          <h3 id="paymentWarningTitle">ポイント目的の後払いではないか。</h3>
+          <p>ポイントは収入ではない。今得る還元より、未来の請求を増やさないことを優先する。「ポイントが付くから」は、後払いを増やす理由にしない。</p>
+          <p class="payment-fact">既に後払いで買ったなら、その事実を記録する。今ある金で実際に支払った場合だけ、支払い方法を変更してくれ。</p>
+          <button class="secondary-button" id="changePaymentToCash" type="button">今ある金から払うへ変更</button>
+          <button class="secondary-button" id="recordAfterpayAnyway" type="button">それでも後払いとして記録する</button>
+        </section>
         <fieldset>
           <legend>買ったもの</legend>
           <div class="inline-radios">
@@ -294,7 +319,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.6.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.7.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -333,11 +358,11 @@
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script defer src="./app.js?v=0.6.0"></script>
+  <script defer src="./app.js?v=0.7.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.6.0"></script>
+  <script defer src="./cloud-sync.js?v=0.7.0"></script>
 </body>
 </html>

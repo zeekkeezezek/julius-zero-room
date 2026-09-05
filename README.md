@@ -1,6 +1,30 @@
-# JULIUS ZERO ROOM v0.6.0 · FIXED COMMITMENTS
+# JULIUS ZERO ROOM v0.7.0 CLOUD SYNC
 
 新しい物と未来の支払いを増やさないための、個人用NO BUY記録PWA。
+
+## v0.7 注意支出と小さい後払い
+
+- 「買った。記録する」の購入区分にCAUTION SPEND / 注意支出を追加。選んだ場合だけSNACK / COMFORT FOOD、OPTIONAL DAILY GOODS、OTHER CAUTIONの3分類を表示する。
+- 必要な食事・飲料、洗剤や衛生用品などの必需品は「必要な買い物」。お菓子・間食、任意の百均用品や便利グッズは注意支出。予定外の趣味物・追加課金は従来通り趣味・衝動買い。
+- HOMEのCAUTION SPENDはカレンダー表示月の実支出合計。3分類の内訳も表示する。予算・残り利用可能額は作らない。
+- 注意支出はNO BUYを自動解除しない。カレンダーはCバッジを追加し、固定分のS/Pと併記できる。趣味・衝動買いがあれば¥ + C、なければ✓ + C。薄い✓の段階では未確定で、NO BUY DAYSへの計上はDAILY CHECKで確定後。
+- 注意支出／趣味・衝動買いでMERPAY／PAIDYを選ぶとPAYMENT WARNINGを表示。「それでも後払いとして記録する」で実際の後払いを保存できる。「今ある金から払うへ変更」は選択だけを変更し、通常の保存で確定する。既に後払いで支払った場合は、その事実を記録する。
+- 必要品・固定分を含め、すべての区分の後払いをNEW AFTERPAY、MERPAY／PAIDY、残高の推定へ従来通り加算する。
+- HOMEとREALITY CHECKへ、ポイント・クーポンで購入や後払いを正当化しない短い警句を追加。
+- HISTORYから注意支出の金額・分類・日付・支払い方法を訂正／削除でき、月合計とバッジは元記録から再計算する。
+- データはversion 7。購入のpurposeにcaution、cautionCategoryにsnack／optional-daily-goods／otherを保存する。v0.6以前の記録を名称から自動再分類しない。JSONと既存の記録単位同期で引き継ぐ。
+
+## CLOUD DATA SIZE
+
+- SETTINGS / SYNC内に表示。WORK ROOMの公開実装（cloud-sync.jsのgetSyncPayloadBytes）を参照し、JSON.stringifyしたデータをBlobにしてUTF-8バイト数を測る方式を再利用した。
+- ZERO ROOMでは同期対象の6種の記録をrecordMapsでまとめて計算する。端末内の未送信分も含む。画像・ローカル設定・バックアップ・syncTests・削除マーカー・サーバー付加情報・Firestoreの索引は含まない。
+- B／KB／MBを1024単位で切替。「ESTIMATED / 同期対象データの推定サイズ」と明記する。取得失敗はUnavailableと表示する。
+- WORK ROOMの900 KB安全上限は単一文書方式専用。ZERO ROOMは記録単位で保存するため、その上限や残容量の表示は移植していない。Firebase全体の使用容量・請求対象量を表すものではない。
+- 購入・固定登録・残高・MONTHLY REALITY・NO BUY等の保存、編集、削除、クラウド反映、同期完了、設定画面を開いた時に再計算する。サイズ確認のための追加通信は行わない。
+
+## v0.7への更新
+
+PC・スマホ双方で設定画面のv0.7.0を確認してから、新しい注意支出を使う。旧v0.6は注意支出の分類に対応していない。旧表示が残る時は、オンラインで一度開いた後に再読み込み、またはアプリを完全に閉じて開き直す。更新のために記録やサイトデータを削除する必要はない。
 
 ## 起動と保存
 
@@ -40,7 +64,7 @@
 
 ## Firestore保存先
 
-v0.6も既存の保存先を維持し、固定項目の個別コレクションを追加する。
+v0.7もv0.6の保存先を維持する。注意支出は既存purchasesへ保存する。
 
 ```text
 users/{uid}/zeroroomV3/meta

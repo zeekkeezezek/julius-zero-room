@@ -102,3 +102,23 @@ select:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .fixed-day-badges>span{display:grid;place-items:center;width:14px;height:14px;border:1px solid #657180;border-radius:3px;color:#b4c0ce;font:700 9px/1 var(--mono);background:#13191e}
 @media(max-width:760px){.fixed-commitments{padding:17px}.fixed-heading{display:block}.fixed-heading>span{display:block;margin-top:10px}.fixed-heading h2{font-size:20px}.day.has-fixed .day-number{font-size:10px}.day.has-fixed .day-mark{right:4px;bottom:21px;width:15px;height:15px;font-size:10px}}
 @media(max-width:420px){.fixed-input-grid{grid-template-columns:1fr}.fixed-name-field{grid-column:auto}.fixed-row{grid-template-columns:minmax(0,1fr) auto;gap:8px}.fixed-row>.row-edit{grid-column:2;justify-self:end}.fixed-totals strong{font-size:19px}.fixed-day-badges{left:3px;gap:2px}.fixed-day-badges>span{width:12px;height:12px;font-size:8px}}
+/* v0.7 — small spending remains visible without becoming a budget. */
+.caution-summary{margin:14px 0 24px;padding:17px 20px;border:1px solid #494234;border-radius:14px;background:#151612}
+.caution-summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.caution-summary-head>span{font:700 11px/1.7 var(--mono);color:#d1b77d}.caution-summary-head small{display:block;color:var(--muted);font-size:10px;font-weight:400;line-height:1.6}
+.caution-summary-head>strong{font:700 24px/1.3 var(--mono);overflow-wrap:anywhere}
+.caution-summary dl{margin:14px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.caution-summary dl>div{min-width:0}.caution-summary dt{font:600 9px/1.6 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.caution-summary dd{margin:5px 0 0;font:600 14px/1.4 var(--mono);overflow-wrap:anywhere}
+.caution-summary p{font-size:10px;color:var(--muted);margin:12px 0 0}
+.caution-purchase-fields{padding:1px 12px 8px;border:1px solid #635336;border-radius:12px;background:#191812}
+.payment-warning{margin:16px 0;padding:16px;border:1px solid #957142;border-radius:12px;background:#201b14}
+.payment-warning h3{font-size:16px;line-height:1.6;margin:7px 0}.payment-warning p{font-size:12px;line-height:1.8}
+.payment-warning .payment-fact{color:var(--muted);font-size:11px}.payment-warning .modal-kicker{color:#dfba7b}
+.payment-warning button{display:block;width:100%;height:auto;min-height:44px;white-space:normal;line-height:1.6;padding:10px;margin-top:9px}
+.cloud-data-size{display:flex;flex-wrap:wrap;gap:12px;align-items:start;justify-content:space-between;margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:12px}
+.cloud-data-size>div>span{display:block;font:700 10px/1.5 var(--mono);color:var(--muted)}.cloud-data-size strong{display:block;font:700 24px/1.4 var(--mono);margin-top:7px}
+.estimate-chip{font:600 9px/1.5 var(--mono);padding:4px 7px;border:1px solid var(--line);border-radius:5px;color:var(--muted)}
+.cloud-data-size p{flex-basis:100%;font-size:10px;line-height:1.7;color:var(--muted);margin:0}
+.legend-caution,.fixed-day-badges>.caution-badge{border:1px solid #9b8354;color:#dfc487}
+@media(max-width:420px){.caution-summary{padding:15px}.caution-summary dl{grid-template-columns:1fr;gap:8px}.caution-summary dl>div{display:flex;justify-content:space-between;gap:10px}.caution-summary dd{margin:0}.fixed-day-badges{left:2px;gap:1px}.fixed-day-badges>span{width:9px;height:11px;font-size:8px}.payment-warning{padding:12px}}
