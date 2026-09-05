@@ -8,7 +8,7 @@ const LAST_SYNC_PREFIX='julius_zero_room_v3_last_sync_';
 const SAFETY_KEY='julius_zero_room_cloud_safety_backup';
 const SAVE_DELAY=700;
 const TYPES={days:'days',purchases:'purchases',stoppedUrges:'urges',recoverySnapshots:'recovery',monthlyReality:'reality',fixedCommitments:'fixedCommitments'};
-const state={configured:false,auth:null,db:null,user:null,base:null,metaRef:null,legacyRef:null,listeners:[],active:false,initialized:false,paused:false,saving:false,initialChoice:false,pending:{},lastLocal:clean(Z.getData()),timer:null,status:'local',label:'LOCAL',error:'',cache:'準備中',lastSyncAt:0,remoteChoice:null,deviceId:getDeviceId()};
+const state={configured:false,auth:null,db:null,user:null,base:null,metaRef:null,legacyRef:null,listeners:[],active:false,initialized:false,paused:false,saving:false,initialChoice:false,pending:{},lastLocal:clean(Z.getData()),timer:null,status:'local',label:'端末保存',error:'',cache:'準備中',lastSyncAt:0,remoteChoice:null,deviceId:getDeviceId()};
 
 function getDeviceId(){let value=localStorage.getItem(DEVICE_KEY);if(!value){value=`zero_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;localStorage.setItem(DEVICE_KEY,value)}return value}
 function clean(value){return JSON.parse(JSON.stringify(value))}
@@ -34,27 +34,28 @@ function getSyncPayloadBytes(payload=Z.getData()){
   try{return new Blob([JSON.stringify(clean(recordMaps(payload)))]).size}catch(_){return null}
 }
 function formatDataBytes(bytes){
-  if(!Number.isFinite(bytes)||bytes<0)return 'Unavailable';
+  if(!Number.isFinite(bytes)||bytes<0)return '取得不可';
   if(bytes<1024)return `${Math.round(bytes)} B`;
   if(bytes<1024*1024)return `${(bytes/1024).toFixed(1)} KB`;
   return `${(bytes/(1024*1024)).toFixed(2)} MB`;
 }
 function syncPayloadSizeHtml(){
-  return `<section class="cloud-data-size" aria-label="CLOUD DATA SIZE"><div><span>CLOUD DATA SIZE</span><strong>${formatDataBytes(getSyncPayloadBytes())}</strong></div><span class="estimate-chip">ESTIMATED</span><p>同期対象データの推定サイズ。未送信分を含む、この端末の記録から計算。Firestore全体の使用容量ではない。</p></section>`;
+  return `<section class="cloud-data-size" aria-label="同期データ量"><div><span>同期データ量</span><strong>${formatDataBytes(getSyncPayloadBytes())}</strong></div><span class="estimate-chip">推定</span><p>同期対象データの推定サイズ。未送信分を含む、この端末の記録から計算。Firestore全体の使用容量ではない。</p></section>`;
 }
+function statusLabel(){return({local:'端末保存',saving:'同期中',synced:'同期済み',offline:'オフライン',error:'同期エラー'})[state.status]||state.label}
 function renderPanel(){
   const body=document.getElementById('cloudPanelBody');if(!body)return;
   const sizeHtml=syncPayloadSizeHtml();
-  if(!state.configured){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>LOCAL</b></div><div class="sync-copy">この端末への保存は動作している。Firebase設定を読み込める公開URLでは、PCとスマホの同期を利用できる。</div>'+sizeHtml;return}
-  if(!state.user){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>LOCAL</b></div><div class="sync-copy">Googleアカウントでログインすると、PCとスマホで同じZERO ROOMを使える。ログイン前も端末保存は止まらない。</div><div class="sync-actions"><button class="primary" onclick="zeroCloudSignIn()">Googleでログイン</button></div>'+sizeHtml;return}
+  if(!state.configured){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存</b></div><div class="sync-copy">この端末への保存は動作している。Firebase設定を読み込める公開URLでは、PCとスマホの同期を利用できる。</div>'+sizeHtml;return}
+  if(!state.user){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存</b></div><div class="sync-copy">Googleアカウントでログインすると、PCとスマホで同じZERO ROOMを使える。ログイン前も端末保存は止まらない。</div><div class="sync-actions"><button class="primary" onclick="zeroCloudSignIn()">Googleでログイン</button></div>'+sizeHtml;return}
   const pendingCount=Object.keys(state.pending).length,retry=state.status==='error'?'<button class="primary" onclick="zeroCloudRetry()">再試行</button>':'',resume=state.paused?'<button class="primary" onclick="zeroCloudResume()">初回同期を再開</button>':'';
-  body.innerHTML=`<div class="sync-summary"><span>同期状態</span><b>${escapeHtml(state.label)}</b></div>${state.error?`<div class="sync-copy">${escapeHtml(state.error)}</div>`:''}<div class="sync-copy">${escapeHtml(state.user.email||'Googleアカウント')}<br>最終同期：${escapeHtml(formatTime(state.lastSyncAt))}<br>未送信：${pendingCount}件 · CACHE：${escapeHtml(state.cache)}<br>${escapeHtml(Z.summaryText())}</div>${sizeHtml}<div class="sync-actions">${retry}${resume}<button onclick="zeroCloudSignOut()">ログアウト</button></div>`;
+  body.innerHTML=`<div class="sync-summary"><span>同期状態</span><b>${escapeHtml(statusLabel())}</b></div>${state.error?`<div class="sync-copy">${escapeHtml(state.error)}</div>`:''}<div class="sync-copy">${escapeHtml(state.user.email||'Googleアカウント')}<br>最終同期：${escapeHtml(formatTime(state.lastSyncAt))}<br>未送信：${pendingCount}件 · 端末キャッシュ：${escapeHtml(state.cache)}<br>${escapeHtml(Z.summaryText())}</div>${sizeHtml}<div class="sync-actions">${retry}${resume}<button onclick="zeroCloudSignOut()">ログアウト</button></div>`;
 }
 function safetyCopy(payload,reason){try{localStorage.setItem(SAFETY_KEY,JSON.stringify({reason,savedAt:Date.now(),payload:clean(payload)}))}catch(_){}}
-function choiceStats(payload,updatedAt){const value=Z.normalize(payload),noBuy=Object.values(value.days).filter(day=>day.status==='no-buy').length;return`最終更新 ${formatTime(updatedAt||value.updatedAt)}<br>NO BUY ${noBuy}日 · 購入 ${value.purchases.length}件 · RECOVERY ${value.recoverySnapshots.length}回 · 固定 ${value.fixedCommitments.length}項目`}
+function choiceStats(payload,updatedAt){const value=Z.normalize(payload),noBuy=Object.values(value.days).filter(day=>day.status==='no-buy').length;return`最終更新 ${formatTime(updatedAt||value.updatedAt)}<br>買わなかった日 ${noBuy}日 · 購入 ${value.purchases.length}件 · 残高確認 ${value.recoverySnapshots.length}回 · 固定 ${value.fixedCommitments.length}項目`}
 function showChoice(remote){
   state.remoteChoice=remote;state.initialChoice=true;state.active=false;setStatus('local','LOCAL');
-  const local=Z.getData();Z.showCloudChoice(`<div class="sync-copy">ローカルとクラウドの内容が異なる。勝手に上書きせず、残す側を君が選ぶ。</div><div class="cloud-choice-grid"><div class="cloud-choice"><b>THIS DEVICE</b><p>${choiceStats(local,local.updatedAt)}</p><button onclick="zeroCloudChooseLocal()">この端末を採用</button></div><div class="cloud-choice"><b>CLOUD</b><p>${choiceStats(remote.payload,remote.updatedAt)}</p><button onclick="zeroCloudChooseCloud()">クラウドを採用</button></div></div><div class="sync-actions"><button onclick="zeroCloudPause()">今は同期しない</button></div>`);
+  const local=Z.getData();Z.showCloudChoice(`<div class="sync-copy">ローカルとクラウドの内容が異なる。勝手に上書きせず、残す側を君が選ぶ。</div><div class="cloud-choice-grid"><div class="cloud-choice"><b>この端末</b><p>${choiceStats(local,local.updatedAt)}</p><button onclick="zeroCloudChooseLocal()">この端末を採用</button></div><div class="cloud-choice"><b>クラウド</b><p>${choiceStats(remote.payload,remote.updatedAt)}</p><button onclick="zeroCloudChooseCloud()">クラウドを採用</button></div></div><div class="sync-actions"><button onclick="zeroCloudPause()">今は同期しない</button></div>`);
 }
 
 function stripCloudFields(record){const value=clean(record||{});delete value.deleted;delete value.updatedAtServer;delete value.writerId;return value}

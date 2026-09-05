@@ -123,3 +123,72 @@ select:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .legend-caution,.fixed-day-badges>.caution-badge{border:1px solid #9b8354;color:#dfc487}
 @media(max-width:420px){.caution-summary{padding:15px}.caution-summary dl{grid-template-columns:1fr;gap:8px}.caution-summary dl>div{display:flex;justify-content:space-between;gap:10px}.caution-summary dd{margin:0}.payment-warning{padding:12px}}
 @media(max-width:760px){.fixed-day-badges.three-badges{left:1px;gap:1px}.fixed-day-badges.three-badges>span{width:9px;height:11px;font-size:8px}}
+
+/* v0.8 — mobile-first visual cleanup and Japanese labels. */
+.calendar-head h2{letter-spacing:.05em}
+.day-number{position:absolute;z-index:2;top:8px;left:8px}
+.day.today::before{content:none}
+.day.has-fixed .day-mark{right:6px;bottom:5px;width:22px;height:22px;font-size:12px}
+.fixed-day-badges{bottom:5px}
+.metrics{grid-template-columns:1.05fr 1fr 1.35fr}
+.combined-urge-metric.active{border-color:rgba(190,137,245,.4);background:linear-gradient(145deg,#221a2b,#191820)}
+.urge-metric-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:17px}
+.urge-metric-grid>div{min-width:0;padding-left:12px;border-left:1px solid var(--line)}
+.urge-metric-grid>div:first-child{padding-left:0;border-left:0}
+.urge-metric-grid small{display:block;color:var(--muted);font-size:10px;font-weight:700}
+.urge-metric-grid strong{margin:7px 0 6px;font-size:clamp(29px,4vw,40px)}
+.urge-metric-grid>div:last-child strong{color:#caa5f6}
+.urge-metric-grid p{font-size:10px}
+.julius-line{margin:-4px 0 16px}
+input[type="date"].text-input,input[type="month"].text-input{display:block;width:100%;min-width:0;max-width:100%;height:54px;box-sizing:border-box;-webkit-appearance:none;appearance:none;overflow:hidden;font-size:16px}
+input[type="date"]::-webkit-date-and-time-value,input[type="month"]::-webkit-date-and-time-value{min-width:0;text-align:left}
+input[type="date"]::-webkit-calendar-picker-indicator,input[type="month"]::-webkit-calendar-picker-indicator{margin:0;padding:0}
+.month-picker{width:190px;max-width:100%}
+#balanceForm{min-width:0;max-width:100%}
+
+@media(max-width:760px){
+  .calendar-panel{padding:13px 10px}
+  .calendar-head{margin-bottom:15px}
+  .weekday-row,.calendar-grid{gap:4px}
+  .day{min-height:68px;padding:7px;border-radius:9px}
+  .day-number{top:7px;left:7px}
+  .day-mark{right:5px;bottom:5px}
+  .day.no-buy .day-mark{width:22px;height:22px}
+  .day.purchase .day-mark{width:24px;height:21px}
+  .day.has-fixed .day-mark{right:4px;bottom:4px;width:19px;height:19px;font-size:11px}
+  .fixed-day-badges{left:4px;bottom:4px;gap:2px}
+  .fixed-day-badges>span{width:12px;height:13px;font-size:8px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .primary-metric{grid-column:auto;min-height:142px}
+  .combined-urge-metric{grid-column:1/-1;min-height:126px}
+  .metric-card{padding:15px}
+  .metric-card>span{font-size:9px;letter-spacing:.07em}
+  .metric-card strong{font-size:clamp(27px,9vw,38px)}
+  .afterpay-breakdown{gap:4px}
+  .afterpay-breakdown span{padding:4px 5px;font-size:7px}
+  .urge-metric-grid{margin-top:14px}
+  .action-panel{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .action-button{aspect-ratio:1 / 1;min-height:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:9px;padding:15px}
+  .action-button>span:nth-child(2){min-width:0}
+  .action-button em{display:none}
+  .action-button small{line-height:1.45}
+  .emergency-button{grid-column:1/-1}
+  .month-picker{display:block;width:100%;min-width:0;max-width:100%}
+  #balanceDate{width:100%;min-width:0;max-width:100%}
+}
+
+@media(max-width:420px){
+  .app-shell{padding-inline:10px}
+  .calendar-panel{margin-inline:-2px;padding-inline:8px}
+  .day{min-height:64px}
+  .day-number{font-size:10px}
+  .day.has-fixed .day-mark{width:17px;height:17px;font-size:10px}
+  .fixed-day-badges{left:3px;gap:1px}
+  .fixed-day-badges>span{width:10px;height:12px;font-size:7px}
+  .action-button{padding:13px}
+  .action-symbol{width:40px;height:40px;border-radius:11px;font-size:21px}
+  .action-button b{font-size:13px;line-height:1.35}
+  .action-button small{font-size:9px}
+  .julius-line{padding-right:12px}
+  .julius-line p{font-size:12px}
+}

@@ -1,7 +1,7 @@
 {
   "name": "JULIUS ZERO ROOM",
   "short_name": "ZERO ROOM",
-  "description": "予定外の趣味・衝動支出をZEROへ。固定分と注意支出を記録し、小さい後払いも見逃さないNO BUY記録アプリ",
+  "description": "予定外の趣味・衝動支出をZEROへ。固定分と注意支出を記録し、小さい後払いも見逃さない記録アプリ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

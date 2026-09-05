@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.7.0">
+  <link rel="stylesheet" href="./styles.css?v=0.8.0">
 </head>
 <body>
   <div class="app-shell">
@@ -23,7 +23,7 @@
       </button>
       <div class="topbar-actions">
         <span class="sync-dot" id="syncDot" data-state="local" aria-hidden="true"></span>
-        <span class="sync-label" id="syncLabel">LOCAL</span>
+        <span class="sync-label" id="syncLabel">端末保存</span>
         <button class="icon-button" id="settingsButton" aria-label="設定と同期">•••</button>
       </div>
     </header>
@@ -32,21 +32,26 @@
       <section class="view active" id="homeView" aria-labelledby="homeTitle">
         <div class="home-heading">
           <div>
-            <span class="kicker">MONTHLY CONTROL</span>
+            <span class="kicker">今月の記録</span>
             <h1 id="homeTitle">ZEROを守る。</h1>
           </div>
-          <span class="live-chip"><i></i> LIVE</span>
+          <span class="live-chip"><i></i> 記録中</span>
         </div>
+
+        <section class="julius-line" aria-live="polite">
+          <img src="./assets/julius/normal.png" alt="" width="72" height="72">
+          <div><span>ジュリアス</span><p id="juliusLine">事前登録済みの少数の固定分以外、予定外の趣味・衝動支出をZEROへ。固定分も自由予算ではない。</p></div>
+        </section>
 
         <section class="today-status" id="todayStatus" aria-labelledby="todayStatusTitle">
           <div class="today-status-main">
-            <span>TODAY STATUS</span>
-            <strong id="todayStatusTitle">ZERO INTACT</strong>
+            <span>今日の状態</span>
+            <strong id="todayStatusTitle">まだ購入なし</strong>
             <p id="todayStatusCopy">……まだゼロだ。そのまま守れ。</p>
           </div>
           <div class="today-status-facts">
-            <div><span>NEW AFTERPAY TODAY</span><b id="todayAfterpay">¥0</b></div>
-            <div><span>HOLD ACTIVE</span><b id="todayHolds">0件</b></div>
+            <div><span>今日増えた後払い</span><b id="todayAfterpay">¥0</b></div>
+            <div><span>現在の保留</span><b id="todayHolds">0件</b></div>
           </div>
         </section>
 
@@ -55,52 +60,49 @@
             <button class="month-button" id="prevMonth" aria-label="前の月">←</button>
             <div>
               <span id="calendarYear">2026</span>
-              <h2 id="calendarTitle">SEPTEMBER</h2>
+              <h2 id="calendarTitle">9月</h2>
             </div>
             <button class="month-button" id="nextMonth" aria-label="次の月">→</button>
           </div>
           <div class="weekday-row" aria-hidden="true">
-            <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+            <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
           </div>
           <div class="calendar-grid" id="calendarGrid"></div>
           <div class="calendar-legend">
-            <span><i class="legend-no-buy">✓</i>NO BUY</span>
-            <span><i class="legend-purchase">¥</i>PURCHASE</span>
-            <span><i class="legend-unconfirmed">?</i>UNCONFIRMED</span>
-            <span><i class="legend-live"></i>TODAY</span>
-            <span><i class="legend-fixed">S</i>FIXED SERVICE</span><span><i class="legend-fixed">P</i>FIXED GAME PASS</span>
-            <span><i class="legend-caution">C</i>CAUTION SPEND</span>
-            <span class="provisional-legend">薄い✓：固定・注意支出のみ記録。NO BUYはDAILY CHECKで確定</span>
+            <span><i class="legend-no-buy">✓</i>買わなかった</span>
+            <span><i class="legend-purchase">¥</i>趣味・衝動買い</span>
+            <span><i class="legend-unconfirmed">?</i>未確定</span>
+            <span><i class="legend-live"></i>今日</span>
+            <span><i class="legend-fixed">S</i>固定サービス</span><span><i class="legend-fixed">P</i>固定月パス</span>
+            <span><i class="legend-caution">C</i>注意支出</span>
+            <span class="provisional-legend">薄い✓：固定・注意支出のみ記録。買わなかった日は「1日の確認」で確定</span>
           </div>
         </section>
 
         <section class="metrics" aria-label="今月の記録">
           <article class="metric-card primary-metric">
-            <span>NO BUY DAYS</span>
+            <span>買わなかった日</span>
             <strong><b id="noBuyCount">0</b><small id="monthDays">/ 30</small></strong>
             <p>予定外の趣味・衝動買いをしなかった日。必要品・固定支出・注意支出とは分ける。</p>
           </article>
           <article class="metric-card afterpay-metric">
-            <span>NEW AFTERPAY</span>
+            <span>今月増えた後払い</span>
             <strong id="afterpayTotal">¥0</strong>
-            <div class="afterpay-breakdown"><span>MERPAY <b id="newMerpay">+¥0</b></span><span>PAIDY <b id="newPaidy">+¥0</b></span><span id="legacyAfterpayRow" hidden>旧記録 <b id="legacyAfterpay">+¥0</b></span></div>
+            <div class="afterpay-breakdown"><span>メルペイ <b id="newMerpay">+¥0</b></span><span>Paidy <b id="newPaidy">+¥0</b></span><span id="legacyAfterpayRow" hidden>旧記録 <b id="legacyAfterpay">+¥0</b></span></div>
             <p>今月、新しく未来へ回した支払い。</p>
           </article>
-          <article class="metric-card urge-metric">
-            <span>STOPPED URGES</span>
-            <strong id="urgeCount">0</strong>
-            <p>過去に一度でも止まれた回数。翌日以降も累積で残る。</p>
-          </article>
-          <article class="metric-card hold-metric" id="holdMetric">
-            <span>HOLD ACTIVE</span>
-            <strong id="holdCount">0</strong>
-            <p id="holdCopy">現在進行中の保留だけ。翌日には0へ戻る。</p>
+          <article class="metric-card urge-metric combined-urge-metric" id="holdMetric">
+            <span>我慢の記録</span>
+            <div class="urge-metric-grid">
+              <div><small>止まれた回数</small><strong id="urgeCount">0</strong><p>累計</p></div>
+              <div><small>現在の保留</small><strong id="holdCount">0</strong><p id="holdCopy">翌日には0へ戻る。</p></div>
+            </div>
           </article>
         </section>
 
         <section class="caution-summary" aria-label="表示月の注意支出">
-          <div class="caution-summary-head"><span>CAUTION SPEND <small>表示月の実績</small></span><strong id="cautionTotal">¥0</strong></div>
-          <dl><div><dt>SNACK</dt><dd id="cautionSnack">¥0</dd></div><div><dt>OPTIONAL DAILY GOODS</dt><dd id="cautionGoods">¥0</dd></div><div><dt>OTHER CAUTION</dt><dd id="cautionOther">¥0</dd></div></dl>
+          <div class="caution-summary-head"><span>注意支出 <small>表示月の実績</small></span><strong id="cautionTotal">¥0</strong></div>
+          <dl><div><dt>お菓子・嗜好品</dt><dd id="cautionSnack">¥0</dd></div><div><dt>任意の日用品</dt><dd id="cautionGoods">¥0</dd></div><div><dt>その他</dt><dd id="cautionOther">¥0</dd></div></dl>
           <p>一回は少額でも、月で見れば支出だ。</p>
         </section>
 
@@ -118,15 +120,11 @@
           <button class="emergency-button" id="stopButton"><span>J</span>ジュリアス、止めろ</button>
         </section>
 
-        <section class="julius-line" aria-live="polite">
-          <img src="./assets/julius/normal.png" alt="" width="72" height="72">
-          <div><span>JULIUS</span><p id="juliusLine">事前登録済みの少数の固定分以外、予定外の趣味・衝動支出をZEROへ。固定分も自由予算ではない。</p></div>
-        </section>
       </section>
 
       <section class="view" id="historyView" aria-labelledby="historyTitle">
         <div class="section-heading">
-          <span class="kicker">MONTHLY ARCHIVE</span>
+          <span class="kicker">月ごとの記録</span>
           <h1 id="historyTitle">記録は消えない。</h1>
           <p>勝った日も、買った日も、ただ事実として残す。</p>
         </div>
@@ -135,13 +133,13 @@
 
       <section class="view" id="recoveryView" aria-labelledby="recoveryTitle">
         <div class="section-heading recovery-heading">
-          <span class="kicker">BALANCE RECOVERY</span>
+          <span class="kicker">残高確認</span>
           <h1 id="recoveryTitle">穴を、少しずつ浅くする。</h1>
           <p>現在表示されている残高を、そのまま記録する。購入履歴からは計算しない。</p>
         </div>
         <section class="monthly-reality" aria-labelledby="realityTitle">
           <div class="reality-heading">
-            <div><span class="kicker">MONTHLY REALITY</span><h2 id="realityTitle">今月の現実を記録する。</h2><p>余裕を探すためではない。危険な時に、現在地へ戻るための数字だ。</p></div>
+            <div><span class="kicker">今月の収支</span><h2 id="realityTitle">今月の現実を記録する。</h2><p>余裕を探すためではない。危険な時に、現在地へ戻るための数字だ。</p></div>
             <label class="month-picker"><span>対象月</span><input class="text-input" id="realityMonth" type="month" min="2026-09"></label>
           </div>
           <div class="reality-summary" id="realitySummary"></div>
@@ -150,18 +148,18 @@
             <div class="reality-input-grid">
               <label><span>今月これから入る予定額</span><div class="money-input small"><span>¥</span><input name="expectedIncomeRemaining" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今月これから入る予定で、まだ手持ちには含まれていない金。</small></label>
               <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今この瞬間の手持ち。既に受け取った給料も含む。</small></label>
-              <label><span>MERPAY 支払予定</span><div class="money-input small"><span>¥</span><input name="merpayDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
-              <label><span>PAIDY 支払予定</span><div class="money-input small"><span>¥</span><input name="paidyDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>メルペイ 支払予定</span><div class="money-input small"><span>¥</span><input name="merpayDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>Paidy 支払予定</span><div class="money-input small"><span>¥</span><input name="paidyDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>その他の必須支払い</span><div class="money-input small"><span>¥</span><input name="otherDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
               <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div><small class="field-help">来月の参考値。今月の計算には含めない。</small></label>
             </div>
             <div class="form-error" id="realityError" role="alert"></div>
-            <button class="submit-button" type="submit">MONTHLY REALITYを保存</button>
+            <button class="submit-button" type="submit">今月の収支を保存</button>
           </form>
         </section>
         <section class="fixed-commitments" aria-labelledby="fixedTitle">
-          <div class="fixed-heading"><div><span class="kicker">FIXED COMMITMENTS</span><h2 id="fixedTitle">事前に把握している固定支出。</h2></div><span id="fixedMonthLabel"></span></div>
-          <p class="fixed-policy">対象月は上のMONTHLY REALITYで切り替える。固定分は自由予算ではない。未使用分の転用・翌月繰り越しはしない。買わずに終えても構わない。</p>
+          <div class="fixed-heading"><div><span class="kicker">固定支出</span><h2 id="fixedTitle">事前に把握している固定支出。</h2></div><span id="fixedMonthLabel"></span></div>
+          <p class="fixed-policy">対象月は上の「今月の収支」で切り替える。固定分は自由予算ではない。未使用分の転用・翌月繰り越しはしない。買わずに終えても構わない。</p>
           <div class="fixed-totals" id="fixedTotals"></div>
           <div id="fixedList" class="fixed-list"></div>
           <form id="fixedForm">
@@ -169,10 +167,10 @@
             <div class="fixed-input-grid">
               <label class="fixed-name-field"><span>名称</span><input class="text-input" id="fixedName" name="fixedName" maxlength="80" required autocomplete="off" placeholder="事前に予定していたサービス・月パス"></label>
               <label><span>登録額</span><div class="money-input small"><span>¥</span><input id="fixedAmount" name="fixedAmount" type="number" min="1" step="1" inputmode="numeric" required></div></label>
-              <label><span>分類</span><select class="text-input" id="fixedCategory" name="fixedCategory"><option value="service">FIXED SERVICE</option><option value="game-pass">FIXED GAME PASS</option></select></label>
+              <label><span>分類</span><select class="text-input" id="fixedCategory" name="fixedCategory"><option value="service">固定サービス</option><option value="game-pass">固定月パス</option></select></label>
               <label><span>対象月</span><input class="text-input" id="fixedMonth" name="fixedMonth" type="month" min="2026-09" required></label>
             </div>
-            <p class="fixed-policy">登録を編集・削除しても実際の支出記録は残る。実績の訂正はHISTORYから。限定パック・石購入・追加課金は趣味・衝動買いとして記録する。</p>
+            <p class="fixed-policy">登録を編集・削除しても実際の支出記録は残る。実績の訂正は「履歴」から。限定パック・石購入・追加課金は趣味・衝動買いとして記録する。</p>
             <div class="form-error" id="fixedError" role="alert"></div>
             <div class="edit-actions"><button class="submit-button" id="fixedSubmit" type="submit">固定項目を登録</button><button class="secondary-button" id="cancelFixedEdit" type="button" hidden>編集をやめる</button><button class="secondary-button danger-button" id="deleteFixed" type="button" hidden>この固定項目を削除</button></div>
           </form>
@@ -180,7 +178,7 @@
         <section class="recovery-overview" id="recoveryOverview"></section>
         <section class="balance-entry">
           <div class="balance-entry-copy">
-            <span class="kicker">NEW SNAPSHOT</span>
+            <span class="kicker">残高を記録</span>
             <h2>現在残高を更新</h2>
             <p>支払い後、月初、気が向いた時。それで構わない。</p>
           </div>
@@ -188,31 +186,31 @@
             <label class="field-label" for="balanceDate">確認日</label>
             <input class="text-input" id="balanceDate" name="date" type="date" required>
             <div class="balance-input-grid">
-              <label><span>MERPAY</span><div class="money-input small"><span>¥</span><input id="merpayBalance" name="merpay" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
-              <label><span>PAIDY</span><div class="money-input small"><span>¥</span><input id="paidyBalance" name="paidy" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
+              <label><span>メルペイ</span><div class="money-input small"><span>¥</span><input id="merpayBalance" name="merpay" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
+              <label><span>Paidy</span><div class="money-input small"><span>¥</span><input id="paidyBalance" name="paidy" type="number" inputmode="numeric" min="0" step="1" placeholder="0" required></div></label>
             </div>
             <div class="form-error" id="balanceError" role="alert"></div>
             <div class="edit-actions"><button class="submit-button" id="balanceSubmit" type="submit">スナップショットを保存</button><button class="secondary-button" id="cancelBalanceEdit" type="button" hidden>編集をやめる</button><button class="secondary-button danger-button" id="deleteSnapshot" type="button" hidden>この記録を削除</button></div>
           </form>
         </section>
         <section class="recovery-history-section">
-          <div class="subsection-head"><span class="kicker">SNAPSHOT HISTORY</span><h2>残高の推移</h2></div>
+          <div class="subsection-head"><span class="kicker">記録履歴</span><h2>残高の推移</h2></div>
           <div class="recovery-history" id="recoveryHistory"></div>
         </section>
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="メインメニュー">
-      <button class="active" data-view="home"><span>01</span>HOME</button>
-      <button data-view="history"><span>02</span>HISTORY</button>
-      <button data-view="recovery"><span>03</span>RECOVERY</button>
+      <button class="active" data-view="home"><span>01</span>ホーム</button>
+      <button data-view="history"><span>02</span>履歴</button>
+      <button data-view="recovery"><span>03</span>残高確認</button>
     </nav>
   </div>
 
   <div class="modal" id="dayModal" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
     <div class="modal-card compact-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">DAILY CHECK</span>
+      <span class="modal-kicker">1日の確認</span>
       <h2 id="dayModalTitle">昨日、趣味・衝動買いをしましたか？</h2>
       <p id="dayModalDate"></p>
       <div class="modal-actions vertical">
@@ -227,7 +225,7 @@
   <div class="modal" id="purchaseModal" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle">
     <div class="modal-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">PURCHASE LOG</span>
+      <span class="modal-kicker">購入記録</span>
       <h2 id="purchaseTitle">いくら使った？</h2>
       <p>責めるためではない。新しい支払いを正確に残す。</p>
       <form id="purchaseForm">
@@ -237,19 +235,19 @@
         <input class="text-input" id="purchaseDate" name="date" type="date" required>
         <fieldset>
           <legend>これはどんな買い物？</legend>
-          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>必要な食事・飲料（NECESSARY FOOD）、洗剤・衛生用品などの必需品（ESSENTIAL DAILY GOODS）</small></span></label>
-          <label class="radio-card"><input type="radio" name="purpose" value="caution"><span><b>CAUTION SPEND / 注意支出</b><small>お菓子・間食・必須ではない百均用品や便利グッズ</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>必要な食事・飲料、洗剤・衛生用品などの必需品</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="caution"><span><b>注意支出</b><small>お菓子・間食・必須ではない百均用品や便利グッズ</small></span></label>
           <label class="radio-card"><input type="radio" name="purpose" value="fixed"><span><b>事前登録済み固定支出</b><small>登録したサービス・月パスのみ。後払いは通常通り加算</small></span></label>
-          <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動買い</b><small>予定外の趣味支出・単発ゲーム課金。その日はPURCHASEになる</small></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動買い</b><small>予定外の趣味支出・単発ゲーム課金。その日は購入日になる</small></span></label>
         </fieldset>
         <div id="cautionPurchaseFields" class="caution-purchase-fields" hidden>
           <label class="field-label" for="purchaseCautionCategory">注意支出の分類</label>
           <select class="text-input" id="purchaseCautionCategory" name="cautionCategory" disabled>
-            <option value="snack">SNACK / COMFORT FOOD</option>
-            <option value="optional-daily-goods">OPTIONAL DAILY GOODS</option>
-            <option value="other">OTHER CAUTION</option>
+            <option value="snack">お菓子・嗜好品</option>
+            <option value="optional-daily-goods">任意の日用品</option>
+            <option value="other">その他の注意支出</option>
           </select>
-          <p class="fixed-policy">お菓子・ジュース・間食はSNACK。必須ではない日用品・収納・予備はOPTIONAL DAILY GOODS。それ以外はOTHER CAUTION。予定外の趣味物・追加課金は「趣味・衝動買い」で記録する。</p>
+          <p class="fixed-policy">お菓子・ジュース・間食は「お菓子・嗜好品」。必須ではない日用品・収納・予備は「任意の日用品」。それ以外は「その他の注意支出」。予定外の趣味物・追加課金は「趣味・衝動買い」で記録する。</p>
         </div>
         <div id="fixedPurchaseFields" class="fixed-purchase-fields" hidden>
           <label class="field-label" for="purchaseFixedId">この月の事前登録項目</label>
@@ -258,12 +256,12 @@
         </div>
         <fieldset>
           <legend>支払い方法</legend>
-          <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b><small>今月のNEW AFTERPAYには加算しない</small></span></label>
-          <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>メルペイ後払い・分割</b><small>NEW MERPAYへ加算する</small></span></label>
-          <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>Paidy後払い・分割</b><small>NEW PAIDYへ加算する</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b><small>今月増えた後払いには加算しない</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>メルペイ後払い・分割</b><small>メルペイの新規分へ加算する</small></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>Paidy後払い・分割</b><small>Paidyの新規分へ加算する</small></span></label>
         </fieldset>
         <section id="paymentWarning" class="payment-warning" aria-labelledby="paymentWarningTitle" hidden>
-          <span class="modal-kicker">PAYMENT WARNING</span>
+          <span class="modal-kicker">後払いへの警告</span>
           <h3 id="paymentWarningTitle">ポイント目的の後払いではないか。</h3>
           <p>ポイントは収入ではない。今得る還元より、未来の請求を増やさないことを優先する。「ポイントが付くから」は、後払いを増やす理由にしない。</p>
           <p class="payment-fact">既に後払いで買ったなら、その事実を記録する。今ある金で実際に支払った場合だけ、支払い方法を変更してくれ。</p>
@@ -289,7 +287,7 @@
     <div class="modal-card urge-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
       <div class="julius-portrait"><img id="urgePortrait" src="./assets/julius/think.png" alt="ジュリアス"></div>
-      <span class="modal-kicker">IMPULSE CHECK</span>
+      <span class="modal-kicker">衝動チェック</span>
       <h2 id="urgeTitle">……まだ買うな。三つだけ答えてくれ。</h2>
       <div id="urgeQuestions"></div>
       <div class="urge-result" id="urgeResult" hidden></div>
@@ -299,11 +297,11 @@
   <div class="modal" id="stopModal" role="dialog" aria-modal="true" aria-labelledby="stopTitle">
     <div class="modal-card stop-card">
       <div class="julius-portrait large"><img src="./assets/julius/stern.png" alt="ジュリアス"></div>
-      <span class="modal-kicker">EMERGENCY BRAKE</span>
+      <span class="modal-kicker">緊急停止</span>
       <h2 id="stopTitle">了解した。</h2>
       <p>今日は買うな。<br>この衝動は明日に回せ。</p>
       <p class="stop-reality" id="stopReality"></p>
-      <div class="plus-one">STOPPED URGES <b>+1</b></div>
+      <div class="plus-one">止まれた回数 <b>+1</b></div>
       <button class="submit-button" data-close>戻る</button>
     </div>
   </div>
@@ -311,7 +309,7 @@
   <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal-card settings-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">SETTINGS / SYNC</span>
+      <span class="modal-kicker">設定・同期</span>
       <h2 id="settingsTitle">端末を待たせない同期。</h2>
       <p>記録は先にこの端末へ保存する。クラウド処理中でもアプリはすぐ使える。</p>
       <div id="cloudPanelBody"></div>
@@ -319,13 +317,13 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.7.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.8.0 クラウド同期</div>
     </div>
   </div>
 
   <div class="modal locked-modal" id="cloudChoiceModal" role="dialog" aria-modal="true" aria-labelledby="cloudChoiceTitle">
     <div class="modal-card">
-      <span class="modal-kicker">FIRST SYNC</span>
+      <span class="modal-kicker">初回同期</span>
       <h2 id="cloudChoiceTitle">同期する記録を選ぶ。</h2>
       <p>ローカルとクラウドを勝手に上書きしない。残す側を君が選べ。</p>
       <div id="cloudChoiceBody"></div>
@@ -334,9 +332,9 @@
 
   <div class="modal locked-modal" id="realityMigrationModal" role="dialog" aria-modal="true" aria-labelledby="realityMigrationTitle">
     <div class="modal-card compact-card migration-card">
-      <span class="modal-kicker">v0.5 DATA CHECK</span>
+      <span class="modal-kicker">v0.5 データ確認</span>
       <h2 id="realityMigrationTitle">v0.5で計算方法を変更した。</h2>
-      <p>MONTHLY REALITYの項目定義が変更されました。「今月これから入る予定額」を確認してください。旧「今月の収入 / 給料」は誤って二重計上しないよう、新しい計算へ自動では加えていない。</p>
+      <p>「今月の収支」の項目定義を変更した。「今月これから入る予定額」を確認してくれ。旧「今月の収入 / 給料」は誤って二重計上しないよう、新しい計算へ自動では加えていない。</p>
       <button class="submit-button" id="ackRealityMigration" type="button">確認して入力し直す</button>
     </div>
   </div>
@@ -344,7 +342,7 @@
   <div class="modal" id="fixedConfirmModal" role="dialog" aria-modal="true" aria-labelledby="fixedConfirmTitle">
     <div class="modal-card">
       <button class="modal-close" data-close type="button" aria-label="閉じる">×</button>
-      <span class="modal-kicker">FIXED COMMITMENT CHECK</span>
+      <span class="modal-kicker">固定支出の確認</span>
       <h2 id="fixedConfirmTitle">後から正当化していないか。</h2>
       <p>この支出は、購入したくなってから固定支出へ追加しようとしていないか？</p>
       <p>固定支出は、突発的な購入を後から正当化するための項目ではない。既存項目の増額・差し替えにも同じ確認を行う。</p>
@@ -354,15 +352,15 @@
   </div>
 
   <div class="achievement" id="achievement" aria-live="assertive">
-    <span>NO BUY</span><strong>+1</strong><p>予定外の趣味・衝動買いをしなかった。</p>
+    <span>買わなかった日</span><strong>+1</strong><p>予定外の趣味・衝動買いをしなかった。</p>
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script defer src="./app.js?v=0.7.0"></script>
+  <script defer src="./app.js?v=0.8.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.7.0"></script>
+  <script defer src="./cloud-sync.js?v=0.8.0"></script>
 </body>
 </html>
