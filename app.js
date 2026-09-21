@@ -1,11 +1,12 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.8.0';
+const APP_VERSION='0.9.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
 const CAUTION_CATEGORIES={snack:'お菓子・嗜好品','optional-daily-goods':'任意の日用品',other:'その他の注意支出'};
+const MONTH_NAMES=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 const JP_MONTH_NAMES=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 let pendingRealityMigration=false;
 let realityMigrationOffered=false;
@@ -19,12 +20,11 @@ let pendingFixedEntry=null;
 let toastTimer=null;
 let achievementTimer=null;
 let urgeAnswers={};
-let paymentWarningAccepted=false;
 
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
 
-function emptyData(){return{version:7,days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:Date.now()}}
+function emptyData(){return{version:7,days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:0}}
 function normalize(input){
   const base=emptyData(),value=input&&typeof input==='object'?input:{};
   if(value.monthlyReality&&Object.keys(value.monthlyReality).length&&(whole(value.version)<5||Object.values(value.monthlyReality).some(item=>item&&item.expectedIncomeVerified!==true)))pendingRealityMigration=true;
@@ -36,7 +36,7 @@ function normalize(input){
   const realitySource=value.monthlyReality&&typeof value.monthlyReality==='object'?value.monthlyReality:{};
   base.monthlyReality=Object.fromEntries(Object.entries(realitySource).filter(([key,item])=>/^\d{4}-\d{2}$/.test(key)&&item).map(([key,item])=>{const createdAt=Number(item.createdAt)||1;return[key,{id:item.id||key,month:key,expectedIncomeRemaining:whole(item.expectedIncomeRemaining),expectedIncomeVerified:item.expectedIncomeVerified===true,legacyIncome:whole(item.legacyIncome??item.income),currentCash:whole(item.currentCash),merpayDue:whole(item.merpayDue),paidyDue:whole(item.paidyDue),otherDue:whole(item.otherDue),nextSalary:whole(item.nextSalary),createdAt,updatedAt:Number(item.updatedAt)||createdAt}]}));
   base.syncTests=Array.isArray(value.syncTests)?value.syncTests.slice(-20):[];
-  base.updatedAt=Number(value.updatedAt)||Date.now();
+  base.updatedAt=Number(value.updatedAt)||0;
   const impulseDates=new Map();
   base.purchases.filter(p=>p.purpose==='impulse').forEach(p=>impulseDates.set(p.date,Math.max(impulseDates.get(p.date)||0,p.updatedAt||p.createdAt)));
   Object.entries(base.days).forEach(([key,item])=>{if(item.status==='purchase'&&!impulseDates.has(key))delete base.days[key]});
@@ -46,7 +46,7 @@ function normalize(input){
 function whole(value){const number=Math.round(Number(value)||0);return Math.max(0,number)}
 function loadStored(key,fallback){try{const raw=localStorage.getItem(key);return raw?normalize(JSON.parse(raw)):normalize(fallback)}catch(_){return normalize(fallback)}}
 function save(options={}){
-  data.version=7;data.updatedAt=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+  data.version=7;data.updatedAt=Math.max(Date.now(),data.updatedAt+1);localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
   if(!options.cloudApply&&typeof window.cloudSyncLocalChanged==='function')window.cloudSyncLocalChanged();
 }
 function commit(message){save();renderAll();if(message)toast(message)}
@@ -67,7 +67,7 @@ function isToday(key){return key===dateKey()}
 function isFuture(key){return key>dateKey()}
 function isStarted(key){return key>=START_DATE}
 function isAfterpay(payment){return['merpay','paidy','legacy'].includes(payment)}
-function paymentLabel(payment){return payment==='merpay'?'メルペイ':payment==='paidy'?'Paidy':payment==='legacy'?'旧：後払い先未設定':'現金'}
+function paymentLabel(payment){return payment==='merpay'?'MERPAY':payment==='paidy'?'PAIDY':payment==='legacy'?'旧：後払い先未設定':'現金'}
 function activeHolds(key=dateKey()){return data.stoppedUrges.filter(item=>item.holdActive!==false&&item.date<=key&&key<(item.expiresOn||nextDateKey(item.date)))}
 function monthRecords(key){
   const noBuy=Object.entries(data.days).filter(([date,state])=>date.startsWith(key)&&state?.status==='no-buy').length;
@@ -102,7 +102,7 @@ function renderTodayStatus(){
   setJulius(varied(lines));
 }
 function renderCalendar(){
-  const year=calendarCursor.getFullYear(),month=calendarCursor.getMonth();document.getElementById('calendarYear').textContent=`${year}年`;document.getElementById('calendarTitle').textContent=JP_MONTH_NAMES[month];
+  const year=calendarCursor.getFullYear(),month=calendarCursor.getMonth();document.getElementById('calendarYear').textContent=year;document.getElementById('calendarTitle').textContent=MONTH_NAMES[month];
   const grid=document.getElementById('calendarGrid');grid.innerHTML='';const mondayOffset=(new Date(year,month,1).getDay()+6)%7;
   for(let i=0;i<mondayOffset;i++)grid.appendChild(dayButton(null,'empty'));
   for(let day=1;day<=daysInMonth(calendarCursor);day++){const current=new Date(year,month,day),key=dateKey(current),record=data.days[key];let state='future';if(!isStarted(key))state='prestart';else if(isToday(key))state=record?.status==='purchase'?'today purchase':record?.status==='no-buy'?'today no-buy':'today';else if(isFuture(key))state='future';else if(record?.status==='no-buy')state='no-buy';else if(record?.status==='purchase')state='purchase';else state='unconfirmed';grid.appendChild(dayButton(day,state,key))}
@@ -228,28 +228,22 @@ function deleteSnapshot(id){const item=data.recoverySnapshots.find(s=>s.id===id)
 
 function showModal(id){document.getElementById(id)?.classList.add('show');document.body.style.overflow='hidden'}
 function hideModal(element){const modal=typeof element==='string'?document.getElementById(element):element.closest('.modal');modal?.classList.remove('show');if(modal?.id==='purchaseModal')resetPurchaseForm();if(modal?.id==='fixedConfirmModal')pendingFixedEntry=null;if(!document.querySelector('.modal.show'))document.body.style.overflow=''}
-function openDayCheck(key){selectedDay=key;const yesterday=new Date(today());yesterday.setDate(yesterday.getDate()-1);const dailyPurchases=data.purchases.filter(item=>item.date===key),essential=dailyPurchases.filter(item=>item.purpose==='essential').length;document.getElementById('dayModalTitle').textContent=key===dateKey(yesterday)?'昨日、趣味・衝動買いをしましたか？':'この日の状態を訂正する。';document.getElementById('dayModalDate').textContent=`${formatDate(key)} · ${data.days[key]?.status==='no-buy'?'買わなかった日として記録済み':data.days[key]?.status==='purchase'?'趣味・衝動購入あり':'未確定'}${essential?` · 必要品 ${essential}件`:''}`;document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='fixed')?' · 固定支出あり（衝動買いとは別）':'';document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='caution')?' · 注意支出あり（C）':'';document.getElementById('clearDayStatus').hidden=!data.days[key];showModal('dayModal')}
+function openDayCheck(key){selectedDay=key;const dailyPurchases=data.purchases.filter(item=>item.date===key),essential=dailyPurchases.filter(item=>item.purpose==='essential').length;document.getElementById('dayModalTitle').textContent='この日の記録。';document.getElementById('dayModalDate').textContent=`${formatDate(key)} · ${data.days[key]?.status==='no-buy'?'買わなかった日として記録済み':data.days[key]?.status==='purchase'?'趣味・衝動購入あり':'未確定'}${essential?` · 必要品 ${essential}件`:''}`;document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='fixed')?' · 固定支出あり（衝動買いとは別）':'';document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='caution')?' · 注意支出あり（C）':'';document.getElementById('clearDayStatus').hidden=!data.days[key];showModal('dayModal')}
 function confirmNoBuy(){
   if(!selectedDay||(!isPast(selectedDay)&&!isToday(selectedDay)))return;const impulse=data.purchases.filter(item=>item.date===selectedDay&&item.purpose==='impulse');if(impulse.length){toast('趣味・衝動の購入記録がある。先に「履歴」から修正または削除してくれ。');return}const now=Date.now();data.days[selectedDay]={id:selectedDay,status:'no-buy',createdAt:data.days[selectedDay]?.createdAt||now,confirmedAt:now,updatedAt:now};hideModal('dayModal');commit();showAchievement();setJulius('予定外の趣味・衝動支出は増やさなかった。ほかの支出も、記録で見ておけ。');
 }
 function clearDayStatus(){if(!selectedDay)return;const impulse=data.purchases.some(item=>item.date===selectedDay&&item.purpose==='impulse');if(impulse){toast('購入ログが残っている。この日は未確定へ戻せない。');return}delete data.days[selectedDay];hideModal('dayModal');commit('日付の確定を解除した。もう一度、正しい状態を選べる。')}
-function resetPurchaseForm(){editingPurchaseId=null;paymentWarningAccepted=false;document.getElementById('paymentWarning').hidden=true;document.getElementById('cautionPurchaseFields').hidden=true;document.getElementById('purchaseCautionCategory').disabled=true;document.getElementById('purchaseForm').reset();document.getElementById('purchaseTitle').textContent='いくら使った？';document.getElementById('purchaseSubmit').textContent='記録する';document.getElementById('deletePurchase').hidden=true;document.getElementById('purchaseError').textContent='';document.getElementById('fixedPurchaseFields').hidden=true;document.getElementById('purchaseFixedId').required=false;document.getElementById('purchaseFixedId').disabled=true}
+function resetPurchaseForm(){editingPurchaseId=null;document.getElementById('cautionPurchaseFields').hidden=true;document.getElementById('purchaseCautionCategory').disabled=true;document.getElementById('purchaseForm').reset();document.getElementById('purchaseTitle').textContent='いくら使った？';document.getElementById('purchaseSubmit').textContent='記録する';document.getElementById('deletePurchase').hidden=true;document.getElementById('purchaseError').textContent='';document.getElementById('fixedPurchaseFields').hidden=true;document.getElementById('purchaseFixedId').required=false;document.getElementById('purchaseFixedId').disabled=true}
 function openPurchase(key=dateKey(),id=null){
   hideModal('dayModal');resetPurchaseForm();const item=id?data.purchases.find(p=>p.id===id):null;editingPurchaseId=item?.id||null;const input=document.getElementById('purchaseDate');input.value=item?.date||key;input.min=START_DATE;input.max=dateKey();document.getElementById('purchaseAmount').value=item?.amount||'';document.getElementById('purchaseName').value=item?.name||'';document.querySelector(`input[name="purpose"][value="${item?.purpose||'impulse'}"]`).checked=true;const payment=['cash','merpay','paidy'].includes(item?.payment)?item.payment:'cash';document.querySelector(`input[name="payment"][value="${payment}"]`).checked=true;document.querySelector(`input[name="medium"][value="${item?.medium||'physical'}"]`).checked=true;document.getElementById('purchaseTitle').textContent=item?'購入記録を訂正する。':'いくら使った？';document.getElementById('purchaseSubmit').textContent=item?'変更を保存':'記録する';document.getElementById('deletePurchase').hidden=!item;refreshFixedPicker();if(item?.purpose==='fixed')document.getElementById('purchaseFixedId').value=item.fixedCommitmentId;document.getElementById('purchaseCautionCategory').value=item?.cautionCategory||'snack';refreshPurchaseFields();showModal('purchaseModal');setTimeout(()=>document.getElementById('purchaseAmount').focus(),80)
 }
-function needsPaymentWarning(purpose,payment){return ['caution','impulse'].includes(purpose)&&['merpay','paidy'].includes(payment)}
 function refreshPurchaseFields(){
   const form=document.getElementById('purchaseForm'),caution=form.elements.purpose.value==='caution';
   document.getElementById('cautionPurchaseFields').hidden=!caution;
   document.getElementById('purchaseCautionCategory').disabled=!caution;
   document.getElementById('purchaseCautionCategory').required=caution;
-  document.getElementById('paymentWarning').hidden=!needsPaymentWarning(form.elements.purpose.value,form.elements.payment.value);
   refreshFixedPicker();
 }
-function changePaymentToCash(){
-  document.querySelector('input[name="payment"][value="cash"]').checked=true;paymentWarningAccepted=false;refreshPurchaseFields();document.getElementById('purchaseSubmit').focus();
-}
-function acceptAfterpayRecord(){paymentWarningAccepted=true;document.getElementById('purchaseForm').requestSubmit()}
 function savePurchase(event){
   event.preventDefault();const form=new FormData(event.currentTarget),amount=Math.round(Number(form.get('amount'))),date=String(form.get('date')||''),payment=String(form.get('payment')||'cash'),purpose=String(form.get('purpose')||'impulse'),medium=String(form.get('medium')||'physical'),name=String(form.get('name')||'').trim();
   if(!Number.isSafeInteger(amount)||amount<1){document.getElementById('purchaseError').textContent='金額を1円以上で入力してくれ。';return}if(!date||date<START_DATE||date>dateKey()){document.getElementById('purchaseError').textContent='記録できる日付を確認してくれ。';return}if(!['cash','merpay','paidy'].includes(payment)){document.getElementById('purchaseError').textContent='支払い方法を選んでくれ。';return}
@@ -260,7 +254,6 @@ function savePurchase(event){
   if(purpose==='fixed'&&(!fixed&&!retained)){document.getElementById('purchaseError').textContent='購入月の事前登録済み固定項目を選んでくれ。未登録の単発購入は趣味・衝動買いだ。';return}
   if(purpose==='fixed'&&data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7))){document.getElementById('purchaseError').textContent='この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
   if(editingPurchaseId&&!oldFixed){document.getElementById('purchaseError').textContent='この記録は別端末で削除された。履歴を確認してくれ。';return}
-  if(needsPaymentWarning(purpose,payment)&&!paymentWarningAccepted){document.getElementById('paymentWarning').hidden=false;document.getElementById('paymentWarning').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('recordAfterpayAnyway').focus();document.getElementById('purchaseError').textContent='後払いへの警告を確認し、実際に使った支払い方法で記録してくれ。';return}
   const fixedFields=purpose==='fixed'?{fixedCommitmentId:fixedId,fixedCategory:retained?oldFixed.fixedCategory:fixed.category,fixedName:retained?oldFixed.fixedName||oldFixed.name:fixed.name}:{};
   const now=Date.now(),old=data.purchases.find(p=>p.id===editingPurchaseId),oldDate=old?.date,entry={id:old?.id||uid('purchase'),date,amount,payment,purpose:['essential','fixed','caution'].includes(purpose)?purpose:'impulse',...(purpose==='caution'?{cautionCategory}:{}),...fixedFields,medium:medium==='digital'?'digital':'physical',name,createdAt:old?.createdAt||now,updatedAt:now};if(old)data.purchases=data.purchases.map(p=>p.id===old.id?entry:p);else data.purchases.push(entry);if(oldDate)reconcileDay(oldDate);reconcileDay(date);hideModal('purchaseModal');commit(old?'購入記録を訂正し、関連集計を再計算した。':purpose==='fixed'?'事前登録済みの支出だ。記録した。':purpose==='caution'?'注意支出を記録した。月の積み重ねを見ておけ。':purpose==='essential'?'必要な買い物として記録した。買わなかった日の資格は失わない。':'記録した。隠さなかった。それでいい。');setJulius(purpose==='caution'?(isAfterpay(payment)?'少額でも、後払いなら未来の請求だ。':'小さい支出も記録した。月の積み重ねを見ておけ。'):purpose==='fixed'?(isAfterpay(payment)?'これは予定していた固定分だ。だが、後払いなら未来の支払いは増えている。':'事前登録済みの支出だ。ここから先の追加課金は許可できない。'):purpose==='essential'?'必要なものは、必要だ。事実だけ残しておけばいい。':'今日は購入日だ。明日はまた買わなかった日を取ればいい。');
 }
@@ -299,7 +292,7 @@ function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&
 function backup(){const payload={...data,app:'JULIUS ZERO ROOM',appVersion:APP_VERSION,exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`julius_zero_room_${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 async function importBackup(file){if(!file)return;try{const parsed=JSON.parse(await file.text());if(!parsed||(!parsed.days&&!parsed.purchases))throw new Error('invalid');if(!window.confirm('本番データをJSONの内容で置き換える。よいか？'))return;localStorage.setItem(`${STORAGE_KEY}_before_import`,JSON.stringify(data));data=normalize(parsed);commit('JSONバックアップを読み込んだ。')}catch(_){toast('このJSONは読み込めない。内容を確認してくれ。')}finally{document.getElementById('importInput').value=''}}
 function applyCloudData(payload){data=normalize(payload);localStorage.setItem(STORAGE_KEY,JSON.stringify(data));renderAll();offerRealityMigration()}
-function setSyncState(state,label){const dot=document.getElementById('syncDot'),text=document.getElementById('syncLabel'),labels={local:'端末保存',saving:'同期中',synced:'同期済み',offline:'オフライン',error:'同期エラー'};dot.dataset.state=state;dot.title=labels[state]||label||state;text.textContent=labels[state]||String(label||state)}
+function setSyncState(state,label){const dot=document.getElementById('syncDot'),text=document.getElementById('syncLabel'),labels={local:'端末保存',saving:'同期中',synced:'同期済み',offline:'オフライン',error:'同期エラー'};dot.dataset.state=state;dot.title=labels[state]||label||state;text.textContent=({local:'LOCAL',saving:'SYNCING',synced:'SYNCED',offline:'LOCAL',error:'LOCAL'})[state]||String(label||state)}
 
 function bindEvents(){
   document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>hideModal(button)));document.querySelectorAll('.modal:not(.locked-modal)').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)hideModal(modal.id)}));document.addEventListener('keydown',event=>{if(event.key==='Escape'){const modal=document.querySelector('.modal.show:not(.locked-modal)');if(modal)hideModal(modal.id)}});
@@ -307,15 +300,14 @@ function bindEvents(){
   document.getElementById('balanceForm').addEventListener('submit',saveBalance);document.getElementById('cancelBalanceEdit').addEventListener('click',resetBalanceForm);document.getElementById('deleteSnapshot').addEventListener('click',()=>editingSnapshotId&&deleteSnapshot(editingSnapshotId));document.getElementById('realityForm').addEventListener('submit',saveReality);document.getElementById('realityMonth').addEventListener('change',()=>{resetFixedForm();loadRealityForm()});
   document.getElementById('fixedForm').addEventListener('submit',saveFixed);document.getElementById('fixedList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-fixed]');if(button)editFixed(button.dataset.editFixed)});
   document.getElementById('cancelFixedEdit').addEventListener('click',resetFixedForm);document.getElementById('deleteFixed').addEventListener('click',deleteFixed);document.getElementById('confirmFixedEntry').addEventListener('click',confirmFixedEntry);
-  document.getElementById('purchaseForm').addEventListener('input',()=>{paymentWarningAccepted=false});document.querySelectorAll('input[name="purpose"],input[name="payment"]').forEach(input=>input.addEventListener('change',()=>{paymentWarningAccepted=false;refreshPurchaseFields()}));document.getElementById('changePaymentToCash').addEventListener('click',changePaymentToCash);document.getElementById('recordAfterpayAnyway').addEventListener('click',acceptAfterpayRecord);document.getElementById('purchaseDate').addEventListener('change',()=>{document.getElementById('purchaseFixedId').value='';refreshFixedPicker()});document.getElementById('purchaseFixedId').addEventListener('change',selectFixedPurchase);
+  document.querySelectorAll('input[name="purpose"],input[name="payment"]').forEach(input=>input.addEventListener('change',()=>{refreshPurchaseFields()}));document.getElementById('purchaseDate').addEventListener('change',()=>{document.getElementById('purchaseFixedId').value='';refreshFixedPicker()});document.getElementById('purchaseFixedId').addEventListener('change',selectFixedPurchase);
   document.getElementById('historyList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-purchase]');if(button)openPurchase(dateKey(),button.dataset.editPurchase)});document.getElementById('recoveryHistory').addEventListener('click',event=>{const button=event.target.closest('[data-edit-snapshot]');if(button)editSnapshot(button.dataset.editSnapshot)});
   document.getElementById('settingsButton').addEventListener('click',()=>{showModal('settingsModal');if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel()});document.getElementById('exportButton').addEventListener('click',backup);document.getElementById('importInput').addEventListener('change',event=>importBackup(event.target.files?.[0]));
   document.getElementById('ackRealityMigration').addEventListener('click',()=>{localStorage.setItem(REALITY_MIGRATION_KEY,'1');hideModal('realityMigrationModal');setView('recovery');document.querySelector('.monthly-reality')?.scrollIntoView({behavior:'smooth',block:'start'})});
 }
 function offerRealityMigration(){if(pendingRealityMigration&&!realityMigrationOffered&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1'){realityMigrationOffered=true;setTimeout(()=>showModal('realityMigrationModal'),250)}}
-function offerPreviousDay(){if(pendingRealityMigration&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1')return;const yesterday=new Date(today());yesterday.setDate(yesterday.getDate()-1);const key=dateKey(yesterday);if(isStarted(key)&&!data.days[key])setTimeout(()=>openDayCheck(key),450)}
 function registerServiceWorker(){if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
 
-window.ZeroRoom={APP_VERSION,STORAGE_KEY,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState,showCloudChoice:body=>{document.getElementById('cloudChoiceBody').innerHTML=body;showModal('cloudChoiceModal')},hideCloudChoice:()=>hideModal('cloudChoiceModal')};
-bindEvents();renderAll();loadRealityForm();offerRealityMigration();offerPreviousDay();registerServiceWorker();
+window.ZeroRoom={APP_VERSION,STORAGE_KEY,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
+bindEvents();renderAll();loadRealityForm();offerRealityMigration();registerServiceWorker();
 })();
