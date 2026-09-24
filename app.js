@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.9.0';
+const APP_VERSION='0.10.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -19,7 +19,6 @@ let editingFixedId=null;
 let pendingFixedEntry=null;
 let toastTimer=null;
 let achievementTimer=null;
-let urgeAnswers={};
 
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
@@ -68,20 +67,21 @@ function isFuture(key){return key>dateKey()}
 function isStarted(key){return key>=START_DATE}
 function isAfterpay(payment){return['merpay','paidy','legacy'].includes(payment)}
 function paymentLabel(payment){return payment==='merpay'?'MERPAY':payment==='paidy'?'PAIDY':payment==='legacy'?'旧：後払い先未設定':'現金'}
-function activeHolds(key=dateKey()){return data.stoppedUrges.filter(item=>item.holdActive!==false&&item.date<=key&&key<(item.expiresOn||nextDateKey(item.date)))}
+function isStoppedUrge(item){return !item.outcome||item.outcome==='declined'}
+function activeHolds(key=dateKey()){return data.stoppedUrges.filter(item=>item.outcome?item.outcome==='pending'&&Number(item.holdUntil)>Date.now():item.holdActive!==false&&item.date<=key&&key<(item.expiresOn||nextDateKey(item.date)))}
 function monthRecords(key){
   const noBuy=Object.entries(data.days).filter(([date,state])=>date.startsWith(key)&&state?.status==='no-buy').length;
   const purchases=data.purchases.filter(item=>item.date.startsWith(key));
   const merpay=purchases.filter(item=>item.payment==='merpay').reduce((sum,item)=>sum+item.amount,0);
   const paidy=purchases.filter(item=>item.payment==='paidy').reduce((sum,item)=>sum+item.amount,0);
   const legacy=purchases.filter(item=>item.payment==='legacy').reduce((sum,item)=>sum+item.amount,0);
-  const urges=data.stoppedUrges.filter(item=>String(item.date||'').startsWith(key));
+  const urges=data.stoppedUrges.filter(item=>isStoppedUrge(item)&&String(item.resolvedDate||item.date||'').startsWith(key));
   const caution=purchases.filter(item=>item.purpose==='caution'),cautionCategories=Object.fromEntries(Object.keys(CAUTION_CATEGORIES).map(category=>[category,caution.filter(item=>item.cautionCategory===category).reduce((sum,item)=>sum+item.amount,0)]));
   return{noBuy,purchases,merpay,paidy,legacy,afterpay:merpay+paidy+legacy,urges,caution:caution.reduce((sum,item)=>sum+item.amount,0),cautionCategories};
 }
 function summaryText(payload=data){
   const value=normalize(payload),months=new Set([...Object.keys(value.days).map(d=>d.slice(0,7)),...value.purchases.map(p=>p.date.slice(0,7)),...Object.keys(value.monthlyReality),...value.fixedCommitments.map(item=>item.month)]);
-  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目`;
+  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.filter(isStoppedUrge).length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目`;
 }
 
 function reconcileDay(key){
@@ -89,7 +89,7 @@ function reconcileDay(key){
   if(impulses.length){data.days[key]={id:key,status:'purchase',createdAt:old?.createdAt||Math.min(...impulses.map(p=>p.createdAt||now)),confirmedAt:now,updatedAt:now}}
   else if(old?.status==='purchase')delete data.days[key];
 }
-function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel()}
+function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroBrake?.refresh()}
 function renderTodayStatus(){
   const todayKey=dateKey(),todayPurchases=data.purchases.filter(item=>item.date===todayKey),impulse=todayPurchases.some(item=>item.purpose==='impulse'),todayAfterpay=todayPurchases.filter(item=>isAfterpay(item.payment)).reduce((sum,item)=>sum+item.amount,0),holds=activeHolds().length;
   const box=document.getElementById('todayStatus');box.classList.toggle('purchase-today',impulse);
@@ -120,10 +120,10 @@ function renderCautionSummary(records){
   for(const [category,id] of [['snack','cautionSnack'],['optional-daily-goods','cautionGoods'],['other','cautionOther']])document.getElementById(id).textContent=money(records.cautionCategories[category]);
 }
 function renderMetrics(){
-  const key=monthKey(calendarCursor),records=monthRecords(key),holds=activeHolds().length;renderCautionSummary(records);document.getElementById('noBuyCount').textContent=records.noBuy;document.getElementById('monthDays').textContent=`/ ${daysInMonth(calendarCursor)}`;document.getElementById('afterpayTotal').textContent=money(records.afterpay);document.getElementById('newMerpay').textContent=signedMoney(records.merpay);document.getElementById('newPaidy').textContent=signedMoney(records.paidy);document.getElementById('legacyAfterpay').textContent=signedMoney(records.legacy);document.getElementById('legacyAfterpayRow').hidden=!records.legacy;document.getElementById('urgeCount').textContent=data.stoppedUrges.length;document.getElementById('holdCount').textContent=holds;document.getElementById('holdCopy').textContent=holds?`現在進行中の保留が${holds}件。翌日には0へ戻る。`:'現在進行中の保留だけ。翌日には0へ戻る。';document.getElementById('holdMetric').classList.toggle('active',holds>0);
+  const key=monthKey(calendarCursor),records=monthRecords(key),holds=activeHolds().length;renderCautionSummary(records);document.getElementById('noBuyCount').textContent=records.noBuy;document.getElementById('monthDays').textContent=`/ ${daysInMonth(calendarCursor)}`;document.getElementById('afterpayTotal').textContent=money(records.afterpay);document.getElementById('newMerpay').textContent=signedMoney(records.merpay);document.getElementById('newPaidy').textContent=signedMoney(records.paidy);document.getElementById('legacyAfterpay').textContent=signedMoney(records.legacy);document.getElementById('legacyAfterpayRow').hidden=!records.legacy;document.getElementById('urgeCount').textContent=data.stoppedUrges.filter(isStoppedUrge).length;document.getElementById('holdCount').textContent=holds;document.getElementById('holdCopy').textContent=holds?`待機中 ${holds}件。見送り確定で回数に加算。`:'保留中は、止まれた回数に加算しない。';document.getElementById('holdMetric').classList.toggle('active',holds>0);
 }
 function renderHistory(){
-  const list=document.getElementById('historyList'),keys=new Set([monthKey(today()),...Object.keys(data.days).map(d=>d.slice(0,7)),...data.purchases.map(p=>p.date.slice(0,7)),...data.stoppedUrges.map(u=>String(u.date).slice(0,7))]),months=[...keys].filter(k=>k>=START_DATE.slice(0,7)).sort().reverse();
+  const list=document.getElementById('historyList'),keys=new Set([monthKey(today()),...Object.keys(data.days).map(d=>d.slice(0,7)),...data.purchases.map(p=>p.date.slice(0,7)),...data.stoppedUrges.map(u=>String(u.resolvedDate||u.date).slice(0,7))]),months=[...keys].filter(k=>k>=START_DATE.slice(0,7)).sort().reverse();
   if(!months.length){list.innerHTML='<div class="history-empty">記録はまだない。</div>';return}
   list.innerHTML=months.map(key=>{const[year,month]=key.split('-').map(Number),records=monthRecords(key),rows=[...records.purchases].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).map(item=>`<div class="purchase-log-row"><time>${item.date.slice(5).replace('-',' / ')}</time><div><b>${escapeHtml(item.name||'購入記録')}</b><small>${purchasePurposeLabel(item)} · ${item.medium==='digital'?'デジタル・課金':'物理物'} · <strong class="payment-tag ${item.payment}">${paymentLabel(item.payment)}</strong></small><small>最終更新 ${escapeHtml(formatUpdated(item.updatedAt))}</small></div><strong>${money(item.amount)}</strong><button class="row-edit" type="button" data-edit-purchase="${escapeHtml(item.id)}">編集</button></div>`).join('');return`<article class="history-month"><div class="history-month-head"><h2>${year}年 ${JP_MONTH_NAMES[month-1]}</h2><span>買わなかった日 ${records.noBuy}</span></div><div class="history-stats"><div><span>買わなかった日</span><b>${records.noBuy}</b></div><div><span>今月増えた後払い</span><b>${money(records.afterpay)}</b><small>メルペイ ${signedMoney(records.merpay)} / Paidy ${signedMoney(records.paidy)}</small></div><div><span>止まれた回数</span><b>${records.urges.length}</b></div></div><div class="purchase-log">${rows||'<div class="history-empty">購入記録なし</div>'}</div></article>`}).join('');
 }
@@ -263,28 +263,9 @@ function deletePurchase(){
 function showAchievement(){const box=document.getElementById('achievement');clearTimeout(achievementTimer);box.classList.add('show');achievementTimer=setTimeout(()=>box.classList.remove('show'),2100)}
 function setJulius(message){document.getElementById('juliusLine').textContent=message}
 
-const urgeQuestions=[{id:'need',text:'それは今日必要なものか？',answers:[['needed','必要'],['want','趣味・欲しいだけ']]},{id:'money',text:'今ある金だけで買えるか？',answers:[['cash','買える'],['afterpay','後払いが必要']]},{id:'space',text:'置く場所は既に空いているか？',answers:[['yes','ある'],['no','ない']]}];
-function currentReality(){return data.monthlyReality[monthKey(today())]||null}
-function realityCheck(){
-  const item=currentReality();if(!item)return{item:null,required:0,cash:0,expected:0,available:0,shortage:0,covered:0};return{item,...realityNumbers(item)};
-}
-function varied(list){return list[(data.stoppedUrges.length+today().getDate())%list.length]}
-function openUrge(){urgeAnswers={};document.getElementById('urgePortrait').src='./assets/julius/think.png';document.getElementById('urgeResult').hidden=true;renderUrgeQuestions();showModal('urgeModal')}
-function renderUrgeQuestions(){document.getElementById('urgeQuestions').innerHTML=urgeQuestions.map((question,index)=>`<section class="urge-question"><span>質問 0${index+1}</span><h3>${question.text}</h3><div class="answer-grid">${question.answers.map(([value,label])=>`<button type="button" class="answer-button ${urgeAnswers[question.id]===value?'selected':''}" data-question="${question.id}" data-answer="${value}">${label}</button>`).join('')}</div></section>`).join('');document.querySelectorAll('.answer-button').forEach(button=>button.addEventListener('click',()=>{urgeAnswers[button.dataset.question]=button.dataset.answer;renderUrgeQuestions();if(Object.keys(urgeAnswers).length===3)renderUrgeResult()}))}
-function renderUrgeResult(){
-  const want=urgeAnswers.need==='want',afterpay=urgeAnswers.money==='afterpay',noSpace=urgeAnswers.space==='no',reality=realityCheck(),veryDangerous=want&&afterpay&&reality.shortage<0,dangerous=afterpay||want||noSpace,result=document.getElementById('urgeResult');result.hidden=false;result.className=`urge-result ${dangerous?'danger':''}`;document.getElementById('urgePortrait').src=dangerous?'./assets/julius/stern.png':'./assets/julius/normal.png';
-  let title='今すぐ決める必要はない。',lines=['今日は保留して、明日もう一度考えろ。'];
-  if(veryDangerous){title='駄目だ、ジーク。';lines=[`現在の手持ち${money(reality.cash)}と、今月これから入る予定額${money(reality.expected)}を合わせても、必須支払いに${money(Math.abs(reality.shortage))}足りない。`,varied(['今見るべきなのは商品の割引額ではない。今月の不足額だ。','今月は既に、予定収入を含めても必須支払いへ届かない。ここへ新しい買い物を足す余裕はない。']), '商品ページを閉じろ。今日は買うな。']}
-  else if(afterpay){title='……許可できない。';lines=['後払いを増やさないためにZERO ROOMを作ったはずだ。','欲しい物が悪いのではない。今買うのが駄目だ。',varied(["『後払いなら払える』は、今の君には『払える』ではない。未来の給料へ支払いを送っているだけだ。",'安い商品と、今の君に買える商品は同じではない。','崩すのは財布ではなく、後払い返済額だ。'])]}
-  else if(dangerous){title='今日は保留だ。';lines=[noSpace?'置く場所がない物を、今増やす理由はない。':'欲しいだけなら、今日である必要はない。',varied(['多少高くても、本当に使う物の方が、使わない安物より遥かに安い。','ZERO ROOMを作ったのは、今日その一周を始めないためだ。'])]}
-  if(want)lines.push(varied(['固定支出を認めたことは、追加購入の許可ではない。','固定分を使わなかったからといって、その金額を別の商品へ回していいわけではない。','登録した月パス以外の単発課金は、予定外の購入だ。今日は買うな。']));
-  lines.push(reality.shortage<0?'還元率を見る前に、今月の不足額を見ろ。ポイントもクーポンも、購入の理由にはならない。':varied(['ポイントが付くことと、今買えることは別だ。クーポンがあっても、必要性は変わらない。','ポイントは収入ではない。後払いを増やす理由にはならない。']));
-  const planned=fixedTotals(monthKey(today())).registered;if(reality.shortage<0&&planned>0)lines.push(`今月は既に不足している上、登録済み固定支出は${money(planned)}ある。請求との二重計上を避け、不足額とは別に示している。`);
-  if(reality.item&&reality.item.nextSalary>0)lines.push('来月の給料は、今月の欲しい物のための金ではない。');
-  result.innerHTML=`<h3>${escapeHtml(title)}</h3>${lines.map(line=>`<p>${escapeHtml(line)}</p>`).join('')}<button type="button" id="holdUrge">${dangerous?'今日は保留にする':'10分、保留にする'}</button>`;document.getElementById('holdUrge').addEventListener('click',()=>recordStoppedUrge('quiz',urgeAnswers));result.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function recordStoppedUrge(source,answers=null){const now=Date.now(),date=dateKey();data.stoppedUrges.push({id:uid('urge'),date,source,answers:answers?{...answers}:null,holdActive:true,expiresOn:nextDateKey(date),createdAt:now,updatedAt:now});hideModal(source==='quiz'?'urgeModal':'stopModal');commit('我慢 +1 · 衝動を翌日まで保留した。');setJulius('一度止まれた。それで十分だ。')}
-function emergencyStop(){const now=Date.now(),date=dateKey(),reality=realityCheck();data.stoppedUrges.push({id:uid('urge'),date,source:'emergency',answers:null,holdActive:true,expiresOn:nextDateKey(date),createdAt:now,updatedAt:now});commit();document.getElementById('stopReality').textContent=reality.shortage<0?`今月これから入る予定の金を含めても、必須支払いに${money(Math.abs(reality.shortage))}足りない。今日は買うな。`:'';showModal('stopModal');setJulius('今日は買うな。この衝動は明日に回せ。')}
+function varied(list){return list[(data.stoppedUrges.filter(isStoppedUrge).length+today().getDate())%list.length]}
+function openUrge(){window.ZeroBrake.open('quiz')}
+function emergencyStop(){window.ZeroBrake.open('emergency')}
 
 function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}}
 function toast(message){const box=document.getElementById('toast');clearTimeout(toastTimer);box.textContent=message;box.classList.add('show');toastTimer=setTimeout(()=>box.classList.remove('show'),3200)}
@@ -308,6 +289,6 @@ function bindEvents(){
 function offerRealityMigration(){if(pendingRealityMigration&&!realityMigrationOffered&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1'){realityMigrationOffered=true;setTimeout(()=>showModal('realityMigrationModal'),250)}}
 function registerServiceWorker(){if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
 
-window.ZeroRoom={APP_VERSION,STORAGE_KEY,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
+window.ZeroRoom={APP_VERSION,STORAGE_KEY,monthRecords,balanceModel,isStoppedUrge,showModal,hideModal,setJulius,openPurchase,money,escapeHtml,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
 bindEvents();renderAll();loadRealityForm();offerRealityMigration();registerServiceWorker();
 })();

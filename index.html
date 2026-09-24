@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.9.0">
+  <link rel="stylesheet" href="./styles.css?v=0.10.0">
 </head>
 <body>
   <div class="app-shell">
@@ -95,8 +95,9 @@
             <span>URGE CONTROL</span>
             <div class="urge-metric-grid">
               <div><small>止まれた回数</small><strong id="urgeCount">0</strong><p>累計</p></div>
-              <div><small>現在の保留</small><strong id="holdCount">0</strong><p id="holdCopy">翌日には0へ戻る。</p></div>
+              <div><small>現在の保留</small><strong id="holdCount">0</strong><p id="holdCopy">見送り確定で回数に加算。</p></div>
             </div>
+            <button class="text-button" id="reviewHolds" type="button">HOLDを確認</button>
           </article>
         </section>
 
@@ -109,7 +110,7 @@
         <section class="action-panel" aria-label="今日の操作">
           <button class="action-button urge-button" id="urgeButton">
             <span class="action-symbol">!</span>
-            <span><b>欲しい！！</b><small>三つだけ答える</small></span>
+            <span><b>欲しい！！</b><small>欲しい物と危険サインを確認</small></span>
             <em>→</em>
           </button>
           <button class="action-button purchase-button" id="purchaseButton">
@@ -276,25 +277,48 @@
   </div>
 
   <div class="modal" id="urgeModal" role="dialog" aria-modal="true" aria-labelledby="urgeTitle">
-    <div class="modal-card urge-card">
+    <div class="modal-card brake-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <div class="julius-portrait"><img id="urgePortrait" src="./assets/julius/think.png" alt="ジュリアス"></div>
       <span class="modal-kicker">IMPULSE CHECK</span>
-      <h2 id="urgeTitle">……まだ買うな。三つだけ答えてくれ。</h2>
-      <div id="urgeQuestions"></div>
-      <div class="urge-result" id="urgeResult" hidden></div>
+      <h2 id="urgeTitle">欲しいままでいい。一度、立ち止まれ。</h2>
+      <form id="brakeForm">
+        <div class="brake-item-inputs">
+          <label>商品名 <small>任意</small><input class="text-input" id="brakeName" maxlength="80" placeholder="気になった物" autocomplete="off"></label>
+          <label>金額 <small>任意</small><input class="text-input" id="brakeAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="円"></label>
+        </div>
+        <p class="brake-hint">当てはまるものだけ選ぶ。複数選択できる。</p>
+        <div id="brakeSignals"></div>
+        <button class="submit-button" type="submit">今の状態を確認する</button>
+      </form>
+      <div id="brakeResult" hidden></div>
     </div>
   </div>
 
   <div class="modal" id="stopModal" role="dialog" aria-modal="true" aria-labelledby="stopTitle">
-    <div class="modal-card stop-card">
-      <div class="julius-portrait large"><img src="./assets/julius/stern.png" alt="ジュリアス"></div>
+    <div class="modal-card brake-card emergency-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
       <span class="modal-kicker">EMERGENCY BRAKE</span>
-      <h2 id="stopTitle">了解した。</h2>
-      <p>今日は買うな。<br>この衝動は明日に回せ。</p>
-      <p class="stop-reality" id="stopReality"></p>
-      <div class="plus-one">止まれた回数 <b>+1</b></div>
-      <button class="submit-button" data-close>戻る</button>
+      <h2 id="stopTitle">……ダメだ。今は買うな。</h2>
+      <div id="emergencyReality"></div>
+      <h3 class="brake-label">今の君に当てはまるもの</h3>
+      <div id="emergencySignals" class="signal-grid"></div>
+      <div id="emergencyMessages" class="brake-messages" aria-live="polite"></div>
+      <details class="brake-optional"><summary>商品名・金額を残す（任意）</summary>
+        <div class="brake-item-inputs">
+          <label>商品名<input class="text-input" id="emergencyName" maxlength="80" autocomplete="off"></label>
+          <label>金額<input class="text-input" id="emergencyAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="円"></label>
+        </div>
+      </details>
+      <div id="emergencyActions"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="holdsModal" role="dialog" aria-modal="true" aria-labelledby="holdsTitle">
+    <div class="modal-card brake-card">
+      <button class="modal-close" data-close aria-label="閉じる">×</button>
+      <span class="modal-kicker">HOLD REVIEW</span>
+      <h2 id="holdsTitle">時間を置いた。今はどうだ。</h2>
+      <div id="holdsList"></div>
     </div>
   </div>
 
@@ -309,7 +333,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.9.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.10.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -339,11 +363,12 @@
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <script defer src="./app.js?v=0.9.0"></script>
+  <script defer src="./app.js?v=0.10.0"></script>
+  <script defer src="./brake.js?v=0.10.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.9.0"></script>
+  <script defer src="./cloud-sync.js?v=0.10.0"></script>
 </body>
 </html>

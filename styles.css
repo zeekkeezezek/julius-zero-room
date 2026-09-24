@@ -192,3 +192,39 @@ input[type="date"]::-webkit-calendar-picker-indicator,input[type="month"]::-webk
   .julius-line{padding-right:12px}
   .julius-line p{font-size:12px}
 }
+/* v0.10: opt-in brakes and timed HOLD review. */
+.brake-card{max-width:680px;text-align:left}
+.brake-card h2{font-size:clamp(21px,4vw,28px);line-height:1.5;margin:12px 0 20px;padding-right:20px}
+.brake-item-inputs{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px}
+.brake-item-inputs label{font-size:12px;min-width:0}
+.brake-item-inputs input{margin-top:8px;width:100%;min-width:0;box-sizing:border-box}
+.brake-item-inputs small,.brake-hint{font-size:11px;color:var(--muted,#98a2ac);line-height:1.7}
+.signal-group{border-bottom:1px solid #29323a;padding:12px 0}
+.signal-group summary,.brake-optional summary,.hold-history summary{cursor:pointer;font-size:13px;padding:10px 0;min-height:40px;box-sizing:border-box}
+.signal-group summary span{color:#7bc9ad;margin-left:8px}
+.signal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:8px 0}
+.signal-option{display:flex;align-items:center;gap:8px;padding:11px 10px;min-height:44px;border:1px solid #303a43;border-radius:10px;background:#131a20;font-size:12px;line-height:1.6;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.signal-option:has(input:checked){border-color:#71c8a3;background:#18342b;color:#d6f7e6}
+.signal-option input{accent-color:#72d5a7;flex:0 0 auto;width:16px;height:16px}
+.brake-financial{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0 8px}
+.brake-financial>div{min-width:0;border:1px solid #303a43;background:#11191e;border-radius:11px;padding:12px}
+.brake-financial span{display:block;font-size:10px;line-height:1.6;color:#a8b8bc}
+.brake-financial strong{display:block;font-size:clamp(19px,3.6vw,27px);margin-top:8px;overflow-wrap:anywhere;color:#eef5f1}
+.brake-label{font-size:14px;margin-top:20px}
+.brake-messages{border-left:2px solid #91b8a7;padding:2px 0 2px 14px;margin:18px 0}
+.brake-messages p{font-size:14px;line-height:1.8;margin:8px 0}
+.brake-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:18px}
+.brake-actions button{min-height:48px;margin:0;width:100%;padding:12px 8px;line-height:1.6;font-size:13px;white-space:normal}
+.brake-actions .hold-recommend{grid-column:1/-1;color:#89d9b6;font-size:12px;margin:0}
+.brake-actions button[data-brake-action="decline"]{grid-column:1/-1}
+.brake-product,.hold-entry-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;overflow-wrap:anywhere;margin:16px 0}
+.risk-level{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:#8bd6b4}
+.risk-level span{font-size:11px;letter-spacing:.08em}
+.risk-level strong{font-size:27px;letter-spacing:.04em}
+.risk-caution{color:#e2c78d}.risk-high,.risk-very-high{color:#ef9f96}
+.hold-entry{border:1px solid #303a43;border-radius:12px;padding:16px;margin:12px 0}
+.hold-entry p{font-size:13px;line-height:1.7}.hold-entry small,.hold-signals{color:#9eacb5;font-size:11px;line-height:1.7}
+.hold-history-row{display:flex;flex-direction:column;gap:5px;padding:12px 0;border-bottom:1px solid #29323a;font-size:12px;overflow-wrap:anywhere}
+.hold-history-row span{color:#9eacb5}
+#reviewHolds{margin:12px 0 0;padding:8px 0;font-size:12px;text-align:left}
+@media(max-width:480px){.brake-financial{grid-template-columns:repeat(2,minmax(0,1fr))}.emergency-financial>div:first-child{grid-column:1/-1}.brake-financial>div{padding:10px}.brake-card{padding:22px 16px}.signal-option{font-size:12px;padding:10px 8px}.brake-item-inputs{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}.brake-actions{gap:8px}.hold-entry{padding:12px}.brake-messages p{font-size:13px}}
