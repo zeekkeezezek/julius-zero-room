@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.10.0">
+  <link rel="stylesheet" href="./styles.css?v=0.11.0">
 </head>
 <body>
   <div class="app-shell">
@@ -214,6 +214,7 @@
       <span class="modal-kicker">DAILY LOG</span>
       <h2 id="dayModalTitle">この日の記録。</h2>
       <p id="dayModalDate"></p>
+      <div id="dayPurchases"></div>
       <div class="modal-actions vertical">
         <button class="choice-button no-buy-choice" id="confirmNoBuy"><span>✓</span>NO BUYを記録</button>
         <button class="choice-button purchase-choice" id="confirmPurchase"><span>¥</span>購入を記録する</button>
@@ -319,6 +320,7 @@
       <span class="modal-kicker">HOLD REVIEW</span>
       <h2 id="holdsTitle">時間を置いた。今はどうだ。</h2>
       <div id="holdsList"></div>
+      <div id="holdEditor" hidden></div>
     </div>
   </div>
 
@@ -333,7 +335,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.10.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.11.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -362,13 +364,14 @@
     <span>買わなかった日</span><strong>+1</strong><p>予定外の趣味・衝動買いをしなかった。</p>
   </div>
   <div class="toast" id="toast" role="status"></div>
+  <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./app.js?v=0.10.0"></script>
-  <script defer src="./brake.js?v=0.10.0"></script>
+  <script defer src="./app.js?v=0.11.0"></script>
+  <script defer src="./brake.js?v=0.11.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.10.0"></script>
+  <script defer src="./cloud-sync.js?v=0.11.0"></script>
 </body>
 </html>

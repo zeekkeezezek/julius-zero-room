@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.10.0';
+const APP_VERSION='0.11.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -14,6 +14,7 @@ let data=loadStored(STORAGE_KEY,emptyData());
 let calendarCursor=startOfMonth(today());
 let selectedDay=null;
 let editingPurchaseId=null;
+let purchaseHoldContext=null;
 let editingSnapshotId=null;
 let editingFixedId=null;
 let pendingFixedEntry=null;
@@ -89,7 +90,7 @@ function reconcileDay(key){
   if(impulses.length){data.days[key]={id:key,status:'purchase',createdAt:old?.createdAt||Math.min(...impulses.map(p=>p.createdAt||now)),confirmedAt:now,updatedAt:now}}
   else if(old?.status==='purchase')delete data.days[key];
 }
-function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroBrake?.refresh()}
+function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroBrake?.refresh();if(document.getElementById('dayModal').classList.contains('show'))renderDayPurchases()}
 function renderTodayStatus(){
   const todayKey=dateKey(),todayPurchases=data.purchases.filter(item=>item.date===todayKey),impulse=todayPurchases.some(item=>item.purpose==='impulse'),todayAfterpay=todayPurchases.filter(item=>isAfterpay(item.payment)).reduce((sum,item)=>sum+item.amount,0),holds=activeHolds().length;
   const box=document.getElementById('todayStatus');box.classList.toggle('purchase-today',impulse);
@@ -228,14 +229,26 @@ function deleteSnapshot(id){const item=data.recoverySnapshots.find(s=>s.id===id)
 
 function showModal(id){document.getElementById(id)?.classList.add('show');document.body.style.overflow='hidden'}
 function hideModal(element){const modal=typeof element==='string'?document.getElementById(element):element.closest('.modal');modal?.classList.remove('show');if(modal?.id==='purchaseModal')resetPurchaseForm();if(modal?.id==='fixedConfirmModal')pendingFixedEntry=null;if(!document.querySelector('.modal.show'))document.body.style.overflow=''}
-function openDayCheck(key){selectedDay=key;const dailyPurchases=data.purchases.filter(item=>item.date===key),essential=dailyPurchases.filter(item=>item.purpose==='essential').length;document.getElementById('dayModalTitle').textContent='この日の記録。';document.getElementById('dayModalDate').textContent=`${formatDate(key)} · ${data.days[key]?.status==='no-buy'?'買わなかった日として記録済み':data.days[key]?.status==='purchase'?'趣味・衝動購入あり':'未確定'}${essential?` · 必要品 ${essential}件`:''}`;document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='fixed')?' · 固定支出あり（衝動買いとは別）':'';document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='caution')?' · 注意支出あり（C）':'';document.getElementById('clearDayStatus').hidden=!data.days[key];showModal('dayModal')}
+function openDayCheck(key){selectedDay=key;const dailyPurchases=data.purchases.filter(item=>item.date===key),essential=dailyPurchases.filter(item=>item.purpose==='essential').length;document.getElementById('dayModalTitle').textContent='この日の記録。';document.getElementById('dayModalDate').textContent=`${formatDate(key)} · ${data.days[key]?.status==='no-buy'?'買わなかった日として記録済み':data.days[key]?.status==='purchase'?'趣味・衝動購入あり':'未確定'}${essential?` · 必要品 ${essential}件`:''}`;document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='fixed')?' · 固定支出あり（衝動買いとは別）':'';document.getElementById('dayModalDate').textContent+=dailyPurchases.some(p=>p.purpose==='caution')?' · 注意支出あり（C）':'';document.getElementById('clearDayStatus').hidden=!data.days[key];renderDayPurchases();showModal('dayModal')}
+function renderDayPurchases(){
+  if(!selectedDay)return;const records=data.purchases.filter(item=>item.date===selectedDay).sort((a,b)=>a.createdAt-b.createdAt),total=records.reduce((sum,item)=>sum+item.amount,0),afterpay=records.filter(item=>isAfterpay(item.payment)).reduce((sum,item)=>sum+item.amount,0);
+  document.getElementById('dayPurchases').innerHTML=`<div class="day-spend-summary"><span>この日の支出 <strong>${money(total)}</strong></span><small>うち後払い ${money(afterpay)} · ${records.length}件</small></div>${records.length?records.map(item=>`<div class="day-purchase-row"><div><b>${escapeHtml(item.name||'購入記録')}</b><small>${escapeHtml(purchasePurposeLabel(item))} · ${paymentLabel(item.payment)}</small></div><strong>${money(item.amount)}</strong><button type="button" class="row-edit" data-day-purchase="${escapeHtml(item.id)}">訂正</button></div>`).join(''):'<p class="brake-hint">この日の購入記録はない。</p>'}`;
+}
 function confirmNoBuy(){
   if(!selectedDay||(!isPast(selectedDay)&&!isToday(selectedDay)))return;const impulse=data.purchases.filter(item=>item.date===selectedDay&&item.purpose==='impulse');if(impulse.length){toast('趣味・衝動の購入記録がある。先に「履歴」から修正または削除してくれ。');return}const now=Date.now();data.days[selectedDay]={id:selectedDay,status:'no-buy',createdAt:data.days[selectedDay]?.createdAt||now,confirmedAt:now,updatedAt:now};hideModal('dayModal');commit();showAchievement();setJulius('予定外の趣味・衝動支出は増やさなかった。ほかの支出も、記録で見ておけ。');
 }
 function clearDayStatus(){if(!selectedDay)return;const impulse=data.purchases.some(item=>item.date===selectedDay&&item.purpose==='impulse');if(impulse){toast('購入ログが残っている。この日は未確定へ戻せない。');return}delete data.days[selectedDay];hideModal('dayModal');commit('日付の確定を解除した。もう一度、正しい状態を選べる。')}
-function resetPurchaseForm(){editingPurchaseId=null;document.getElementById('cautionPurchaseFields').hidden=true;document.getElementById('purchaseCautionCategory').disabled=true;document.getElementById('purchaseForm').reset();document.getElementById('purchaseTitle').textContent='いくら使った？';document.getElementById('purchaseSubmit').textContent='記録する';document.getElementById('deletePurchase').hidden=true;document.getElementById('purchaseError').textContent='';document.getElementById('fixedPurchaseFields').hidden=true;document.getElementById('purchaseFixedId').required=false;document.getElementById('purchaseFixedId').disabled=true}
+function resetPurchaseForm(){editingPurchaseId=null;purchaseHoldContext=null;document.getElementById('cautionPurchaseFields').hidden=true;document.getElementById('purchaseCautionCategory').disabled=true;document.getElementById('purchaseForm').reset();document.getElementById('purchaseTitle').textContent='いくら使った？';document.getElementById('purchaseSubmit').textContent='記録する';document.getElementById('deletePurchase').hidden=true;document.getElementById('purchaseError').textContent='';document.getElementById('fixedPurchaseFields').hidden=true;document.getElementById('purchaseFixedId').required=false;document.getElementById('purchaseFixedId').disabled=true}
 function openPurchase(key=dateKey(),id=null){
   hideModal('dayModal');resetPurchaseForm();const item=id?data.purchases.find(p=>p.id===id):null;editingPurchaseId=item?.id||null;const input=document.getElementById('purchaseDate');input.value=item?.date||key;input.min=START_DATE;input.max=dateKey();document.getElementById('purchaseAmount').value=item?.amount||'';document.getElementById('purchaseName').value=item?.name||'';document.querySelector(`input[name="purpose"][value="${item?.purpose||'impulse'}"]`).checked=true;const payment=['cash','merpay','paidy'].includes(item?.payment)?item.payment:'cash';document.querySelector(`input[name="payment"][value="${payment}"]`).checked=true;document.querySelector(`input[name="medium"][value="${item?.medium||'physical'}"]`).checked=true;document.getElementById('purchaseTitle').textContent=item?'購入記録を訂正する。':'いくら使った？';document.getElementById('purchaseSubmit').textContent=item?'変更を保存':'記録する';document.getElementById('deletePurchase').hidden=!item;refreshFixedPicker();if(item?.purpose==='fixed')document.getElementById('purchaseFixedId').value=item.fixedCommitmentId;document.getElementById('purchaseCautionCategory').value=item?.cautionCategory||'snack';refreshPurchaseFields();showModal('purchaseModal');setTimeout(()=>document.getElementById('purchaseAmount').focus(),80)
+}
+function openPurchaseFromHold(id){
+  const hold=data.stoppedUrges.find(item=>item.id===id);if(!hold)return;
+  const existing=data.purchases.find(item=>item.id===hold.purchaseId)||data.purchases.find(item=>item.id==='purchase_hold_'+id);
+  hideModal('holdsModal');openPurchase(dateKey(),existing?.id||null);
+  purchaseHoldContext={id,updatedAt:hold.updatedAt,purchaseId:existing?.id||null};
+  if(!existing){document.getElementById('purchaseName').value=hold.name||'';document.getElementById('purchaseAmount').value=hold.amount??''}
+  document.getElementById('purchaseTitle').textContent=existing?'紐付いた購入記録を訂正する。':'HOLDから購入を記録する。';
 }
 function refreshPurchaseFields(){
   const form=document.getElementById('purchaseForm'),caution=form.elements.purpose.value==='caution';
@@ -254,8 +267,13 @@ function savePurchase(event){
   if(purpose==='fixed'&&(!fixed&&!retained)){document.getElementById('purchaseError').textContent='購入月の事前登録済み固定項目を選んでくれ。未登録の単発購入は趣味・衝動買いだ。';return}
   if(purpose==='fixed'&&data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7))){document.getElementById('purchaseError').textContent='この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
   if(editingPurchaseId&&!oldFixed){document.getElementById('purchaseError').textContent='この記録は別端末で削除された。履歴を確認してくれ。';return}
+  if(purchaseHoldContext){
+    const hold=data.stoppedUrges.find(item=>item.id===purchaseHoldContext.id);
+    if(!hold||hold.updatedAt!==purchaseHoldContext.updatedAt){document.getElementById('purchaseError').textContent='HOLDが別の操作で変更された。HOLDを開き直してくれ。';return}
+    if(!purchaseHoldContext.purchaseId&&data.purchases.some(item=>item.id==='purchase_hold_'+hold.id)){document.getElementById('purchaseError').textContent='このHOLDの購入は記録済みだ。HOLDから開き直して訂正してくれ。';return}
+  }
   const fixedFields=purpose==='fixed'?{fixedCommitmentId:fixedId,fixedCategory:retained?oldFixed.fixedCategory:fixed.category,fixedName:retained?oldFixed.fixedName||oldFixed.name:fixed.name}:{};
-  const now=Date.now(),old=data.purchases.find(p=>p.id===editingPurchaseId),oldDate=old?.date,entry={id:old?.id||uid('purchase'),date,amount,payment,purpose:['essential','fixed','caution'].includes(purpose)?purpose:'impulse',...(purpose==='caution'?{cautionCategory}:{}),...fixedFields,medium:medium==='digital'?'digital':'physical',name,createdAt:old?.createdAt||now,updatedAt:now};if(old)data.purchases=data.purchases.map(p=>p.id===old.id?entry:p);else data.purchases.push(entry);if(oldDate)reconcileDay(oldDate);reconcileDay(date);hideModal('purchaseModal');commit(old?'購入記録を訂正し、関連集計を再計算した。':purpose==='fixed'?'事前登録済みの支出だ。記録した。':purpose==='caution'?'注意支出を記録した。月の積み重ねを見ておけ。':purpose==='essential'?'必要な買い物として記録した。買わなかった日の資格は失わない。':'記録した。隠さなかった。それでいい。');setJulius(purpose==='caution'?(isAfterpay(payment)?'少額でも、後払いなら未来の請求だ。':'小さい支出も記録した。月の積み重ねを見ておけ。'):purpose==='fixed'?(isAfterpay(payment)?'これは予定していた固定分だ。だが、後払いなら未来の支払いは増えている。':'事前登録済みの支出だ。ここから先の追加課金は許可できない。'):purpose==='essential'?'必要なものは、必要だ。事実だけ残しておけばいい。':'今日は購入日だ。明日はまた買わなかった日を取ればいい。');
+  const now=Date.now(),old=data.purchases.find(p=>p.id===editingPurchaseId),oldDate=old?.date,entry={id:old?.id||(purchaseHoldContext?'purchase_hold_'+purchaseHoldContext.id:uid('purchase')),date,amount,payment,purpose:['essential','fixed','caution'].includes(purpose)?purpose:'impulse',...(purpose==='caution'?{cautionCategory}:{}),...fixedFields,medium:medium==='digital'?'digital':'physical',name,createdAt:old?.createdAt||now,updatedAt:now};if(old)data.purchases=data.purchases.map(p=>p.id===old.id?entry:p);else data.purchases.push(entry);if(purchaseHoldContext)window.ZeroBrake.attachPurchase(purchaseHoldContext.id,entry.id);if(oldDate)reconcileDay(oldDate);reconcileDay(date);hideModal('purchaseModal');commit(old?'購入記録を訂正し、関連集計を再計算した。':purpose==='fixed'?'事前登録済みの支出だ。記録した。':purpose==='caution'?'注意支出を記録した。月の積み重ねを見ておけ。':purpose==='essential'?'必要な買い物として記録した。買わなかった日の資格は失わない。':'記録した。隠さなかった。それでいい。');setJulius(purpose==='caution'?(isAfterpay(payment)?'少額でも、後払いなら未来の請求だ。':'小さい支出も記録した。月の積み重ねを見ておけ。'):purpose==='fixed'?(isAfterpay(payment)?'これは予定していた固定分だ。だが、後払いなら未来の支払いは増えている。':'事前登録済みの支出だ。ここから先の追加課金は許可できない。'):purpose==='essential'?'必要なものは、必要だ。事実だけ残しておけばいい。':'今日は購入日だ。明日はまた買わなかった日を取ればいい。');
 }
 function deletePurchase(){
   const item=data.purchases.find(p=>p.id===editingPurchaseId);if(!item||!window.confirm('この購入記録を削除する？\n関連する今月の後払い額や日別状態も再計算する。'))return;data.purchases=data.purchases.filter(p=>p.id!==item.id);reconcileDay(item.date);hideModal('purchaseModal');commit('購入記録を削除し、後払い額と日別状態を再計算した。')
@@ -282,6 +300,7 @@ function bindEvents(){
   document.getElementById('fixedForm').addEventListener('submit',saveFixed);document.getElementById('fixedList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-fixed]');if(button)editFixed(button.dataset.editFixed)});
   document.getElementById('cancelFixedEdit').addEventListener('click',resetFixedForm);document.getElementById('deleteFixed').addEventListener('click',deleteFixed);document.getElementById('confirmFixedEntry').addEventListener('click',confirmFixedEntry);
   document.querySelectorAll('input[name="purpose"],input[name="payment"]').forEach(input=>input.addEventListener('change',()=>{refreshPurchaseFields()}));document.getElementById('purchaseDate').addEventListener('change',()=>{document.getElementById('purchaseFixedId').value='';refreshFixedPicker()});document.getElementById('purchaseFixedId').addEventListener('change',selectFixedPurchase);
+  document.getElementById('dayPurchases').addEventListener('click',event=>{const button=event.target.closest('[data-day-purchase]');if(button)openPurchase(selectedDay,button.dataset.dayPurchase)});
   document.getElementById('historyList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-purchase]');if(button)openPurchase(dateKey(),button.dataset.editPurchase)});document.getElementById('recoveryHistory').addEventListener('click',event=>{const button=event.target.closest('[data-edit-snapshot]');if(button)editSnapshot(button.dataset.editSnapshot)});
   document.getElementById('settingsButton').addEventListener('click',()=>{showModal('settingsModal');if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel()});document.getElementById('exportButton').addEventListener('click',backup);document.getElementById('importInput').addEventListener('change',event=>importBackup(event.target.files?.[0]));
   document.getElementById('ackRealityMigration').addEventListener('click',()=>{localStorage.setItem(REALITY_MIGRATION_KEY,'1');hideModal('realityMigrationModal');setView('recovery');document.querySelector('.monthly-reality')?.scrollIntoView({behavior:'smooth',block:'start'})});
@@ -289,6 +308,6 @@ function bindEvents(){
 function offerRealityMigration(){if(pendingRealityMigration&&!realityMigrationOffered&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1'){realityMigrationOffered=true;setTimeout(()=>showModal('realityMigrationModal'),250)}}
 function registerServiceWorker(){if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
 
-window.ZeroRoom={APP_VERSION,STORAGE_KEY,monthRecords,balanceModel,isStoppedUrge,showModal,hideModal,setJulius,openPurchase,money,escapeHtml,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
+window.ZeroRoom={APP_VERSION,STORAGE_KEY,monthRecords,balanceModel,isStoppedUrge,showModal,hideModal,setJulius,openPurchase,openPurchaseFromHold,money,escapeHtml,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
 bindEvents();renderAll();loadRealityForm();offerRealityMigration();registerServiceWorker();
 })();

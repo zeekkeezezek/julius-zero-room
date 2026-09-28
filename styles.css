@@ -192,6 +192,21 @@ input[type="date"]::-webkit-calendar-picker-indicator,input[type="month"]::-webk
   .julius-line{padding-right:12px}
   .julius-line p{font-size:12px}
 }
+
+/* v0.11: correctable HOLD results and daily purchase detail. */
+.hold-undo{position:fixed;z-index:1000;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid #718e83;border-radius:12px;background:#172923;color:#e3f6eb;box-shadow:0 8px 30px #0008;font-size:12px}
+.hold-undo[hidden]{display:none}
+.hold-undo button{color:#b7f0d3;background:transparent;border:0;text-decoration:underline;white-space:nowrap;min-height:40px;cursor:pointer}
+body:has(.hold-undo:not([hidden])) #toast{bottom:170px}
+#holdEditor .text-input{width:100%;min-width:0;box-sizing:border-box}
+#holdEditor .secondary-button{white-space:normal;line-height:1.6;width:100%;margin:8px 0}
+.day-spend-summary{display:flex;flex-direction:column;gap:8px;padding:15px 0;border-bottom:1px solid #303a43;margin-bottom:5px}
+.day-spend-summary>span{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:12px}
+.day-spend-summary strong{font-size:25px}.day-spend-summary small{font-size:11px;color:#a4b4b7}
+.day-purchase-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;align-items:center;border-bottom:1px solid #29323a;padding:13px 0;text-align:left}
+.day-purchase-row b{display:block;font-size:13px;overflow-wrap:anywhere}.day-purchase-row small{display:block;font-size:10px;color:#a4b4b7;line-height:1.7;margin-top:5px}
+.day-purchase-row>strong{font-size:13px}.day-purchase-row button{min-height:40px}
+#dayPurchases{margin-bottom:18px;max-width:100%}
 /* v0.10: opt-in brakes and timed HOLD review. */
 .brake-card{max-width:680px;text-align:left}
 .brake-card h2{font-size:clamp(21px,4vw,28px);line-height:1.5;margin:12px 0 20px;padding-right:20px}
