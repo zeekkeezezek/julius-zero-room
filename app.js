@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.11.0';
+const APP_VERSION='0.12.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -24,7 +24,7 @@ let achievementTimer=null;
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
 
-function emptyData(){return{version:7,days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},syncTests:[],updatedAt:0}}
+function emptyData(){return{version:7,days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:0}}
 function normalize(input){
   const base=emptyData(),value=input&&typeof input==='object'?input:{};
   if(value.monthlyReality&&Object.keys(value.monthlyReality).length&&(whole(value.version)<5||Object.values(value.monthlyReality).some(item=>item&&item.expectedIncomeVerified!==true)))pendingRealityMigration=true;
@@ -35,6 +35,8 @@ function normalize(input){
   base.recoverySnapshots=Array.isArray(value.recoverySnapshots)?value.recoverySnapshots.filter(s=>s&&s.id&&s.date&&Number(s.merpay)>=0&&Number(s.paidy)>=0).map(s=>{const createdAt=Number(s.createdAt)||1;return{...s,merpay:Math.round(Number(s.merpay)),paidy:Math.round(Number(s.paidy)),createdAt,updatedAt:Number(s.updatedAt)||createdAt}}):[];
   const realitySource=value.monthlyReality&&typeof value.monthlyReality==='object'?value.monthlyReality:{};
   base.monthlyReality=Object.fromEntries(Object.entries(realitySource).filter(([key,item])=>/^\d{4}-\d{2}$/.test(key)&&item).map(([key,item])=>{const createdAt=Number(item.createdAt)||1;return[key,{id:item.id||key,month:key,expectedIncomeRemaining:whole(item.expectedIncomeRemaining),expectedIncomeVerified:item.expectedIncomeVerified===true,legacyIncome:whole(item.legacyIncome??item.income),currentCash:whole(item.currentCash),merpayDue:whole(item.merpayDue),paidyDue:whole(item.paidyDue),otherDue:whole(item.otherDue),nextSalary:whole(item.nextSalary),createdAt,updatedAt:Number(item.updatedAt)||createdAt}]}));
+  base.goalFunds=Array.isArray(value.goalFunds)?value.goalFunds.filter(item=>item&&item.id).map(item=>({...item,id:String(item.id),fundName:String(item.fundName||'AI・PC強化基金').slice(0,80),targetAmount:Number.isSafeInteger(item.targetAmount)&&item.targetAmount>0?item.targetAmount:null,storageLocation:['envelope','account','other'].includes(item.storageLocation)?item.storageLocation:'envelope',createdAt:Number(item.createdAt)||1,updatedAt:Number(item.updatedAt)||Number(item.createdAt)||1})):[];
+  base.goalFundTransactions=Array.isArray(value.goalFundTransactions)?value.goalFundTransactions.filter(item=>item&&item.id&&item.fundId&&['deposit','withdrawal'].includes(item.transactionType)&&Number.isSafeInteger(item.amount)&&item.amount>0&&validFundDate(item.date)).map(item=>({...item,id:String(item.id),fundId:String(item.fundId),source:String(item.source||'other'),storageLocation:['envelope','account','other'].includes(item.storageLocation)?item.storageLocation:'envelope',memo:String(item.memo||'').slice(0,500),createdAt:Number(item.createdAt)||1,updatedAt:Number(item.updatedAt)||Number(item.createdAt)||1})):[];
   base.syncTests=Array.isArray(value.syncTests)?value.syncTests.slice(-20):[];
   base.updatedAt=Number(value.updatedAt)||0;
   const impulseDates=new Map();
@@ -43,6 +45,7 @@ function normalize(input){
   impulseDates.forEach((updatedAt,key)=>{const old=base.days[key];base.days[key]={id:key,status:'purchase',createdAt:old?.createdAt||updatedAt||1,confirmedAt:updatedAt||1,updatedAt:Math.max(old?.updatedAt||0,updatedAt||1)}});
   return base;
 }
+function validFundDate(value){if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;const date=parseDate(value);return value.slice(0,4)>='1900'&&dateKey(date)===value}
 function whole(value){const number=Math.round(Number(value)||0);return Math.max(0,number)}
 function loadStored(key,fallback){try{const raw=localStorage.getItem(key);return raw?normalize(JSON.parse(raw)):normalize(fallback)}catch(_){return normalize(fallback)}}
 function save(options={}){
@@ -82,7 +85,7 @@ function monthRecords(key){
 }
 function summaryText(payload=data){
   const value=normalize(payload),months=new Set([...Object.keys(value.days).map(d=>d.slice(0,7)),...value.purchases.map(p=>p.date.slice(0,7)),...Object.keys(value.monthlyReality),...value.fixedCommitments.map(item=>item.month)]);
-  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.filter(isStoppedUrge).length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目`;
+  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.filter(isStoppedUrge).length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目 / 積立履歴 ${value.goalFundTransactions.length}件`;
 }
 
 function reconcileDay(key){
@@ -90,7 +93,7 @@ function reconcileDay(key){
   if(impulses.length){data.days[key]={id:key,status:'purchase',createdAt:old?.createdAt||Math.min(...impulses.map(p=>p.createdAt||now)),confirmedAt:now,updatedAt:now}}
   else if(old?.status==='purchase')delete data.days[key];
 }
-function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroBrake?.refresh();if(document.getElementById('dayModal').classList.contains('show'))renderDayPurchases()}
+function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroFund?.refresh();window.ZeroBrake?.refresh();if(document.getElementById('dayModal').classList.contains('show'))renderDayPurchases()}
 function renderTodayStatus(){
   const todayKey=dateKey(),todayPurchases=data.purchases.filter(item=>item.date===todayKey),impulse=todayPurchases.some(item=>item.purpose==='impulse'),todayAfterpay=todayPurchases.filter(item=>isAfterpay(item.payment)).reduce((sum,item)=>sum+item.amount,0),holds=activeHolds().length;
   const box=document.getElementById('todayStatus');box.classList.toggle('purchase-today',impulse);
@@ -285,7 +288,7 @@ function varied(list){return list[(data.stoppedUrges.filter(isStoppedUrge).lengt
 function openUrge(){window.ZeroBrake.open('quiz')}
 function emergencyStop(){window.ZeroBrake.open('emergency')}
 
-function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}}
+function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}if(view==='goalFund')window.ZeroFund?.refresh()}
 function toast(message){const box=document.getElementById('toast');clearTimeout(toastTimer);box.textContent=message;box.classList.add('show');toastTimer=setTimeout(()=>box.classList.remove('show'),3200)}
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function backup(){const payload={...data,app:'JULIUS ZERO ROOM',appVersion:APP_VERSION,exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`julius_zero_room_${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}

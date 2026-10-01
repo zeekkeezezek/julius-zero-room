@@ -7,7 +7,7 @@ const PENDING_PREFIX='julius_zero_room_v3_pending_';
 const LAST_SYNC_PREFIX='julius_zero_room_v3_last_sync_';
 const SAFETY_KEY='julius_zero_room_cloud_safety_backup';
 const SAVE_DELAY=700;
-const TYPES={days:'days',purchases:'purchases',stoppedUrges:'urges',recoverySnapshots:'recovery',monthlyReality:'reality',fixedCommitments:'fixedCommitments'};
+const TYPES={days:'days',purchases:'purchases',stoppedUrges:'urges',recoverySnapshots:'recovery',monthlyReality:'reality',fixedCommitments:'fixedCommitments',goalFunds:'goalFunds',goalFundTransactions:'goalFundTransactions'};
 const state={configured:false,auth:null,db:null,user:null,base:null,metaRef:null,legacyRef:null,listeners:[],active:false,initialized:false,saving:false,starting:false,retryTimer:null,pending:{},lastLocal:clean(Z.getData()),timer:null,status:'local',label:'端末保存',error:'',cache:'準備中',lastSyncAt:0,generation:0,deviceId:getDeviceId()};
 
 function getDeviceId(){let value=localStorage.getItem(DEVICE_KEY);if(!value){value=`zero_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;localStorage.setItem(DEVICE_KEY,value)}return value}
@@ -17,7 +17,7 @@ function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&
 function formatTime(value){if(!value)return'—';const date=value?.toDate?value.toDate():new Date(value);return Number.isNaN(date.getTime())?'—':date.toLocaleString('ja-JP')}
 function canonical(value){if(Array.isArray(value))return value.map(canonical);if(value&&typeof value==='object')return Object.keys(value).sort().reduce((out,key)=>{if(!['updatedAt','updatedAtServer'].includes(key))out[key]=canonical(value[key]);return out},{});return value}
 function contentHash(value){const normalized=recordMaps(Z.normalize(clean(value))),text=JSON.stringify(canonical(normalized));let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}return(`00000000${(h>>>0).toString(16)}`).slice(-8)}
-function isEmpty(payload){return!Object.keys(payload.days||{}).length&&!payload.purchases?.length&&!payload.stoppedUrges?.length&&!payload.recoverySnapshots?.length&&!Object.keys(payload.monthlyReality||{}).length&&!payload.fixedCommitments?.length}
+function isEmpty(payload){return Object.values(recordMaps(payload)).every(map=>!Object.keys(map).length)}
 function recordMaps(payload){return Object.fromEntries(Object.keys(TYPES).map(type=>[type,type==='days'||type==='monthlyReality'?{...(payload[type]||{})}:Object.fromEntries((payload[type]||[]).map(item=>[item.id,item]))]))}
 function pendingKey(type,id){return`${type}:${id}`}
 function pendingStorageKey(){return PENDING_PREFIX+(state.user?.uid||'signed_out')}
@@ -63,7 +63,7 @@ function failed(error){setStatus(navigator.onLine?'error':'offline',navigator.on
 
 function stripCloudFields(record){const value=clean(record||{});delete value.deleted;delete value.updatedAtServer;delete value.writerId;return value}
 function bundlePayload(raw,updatedAt=0){
-  const payload={version:7,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},fixedCommitments:[],syncTests:[],updatedAt:Number(updatedAt)||0};
+  const payload={version:7,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},fixedCommitments:[],goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:Number(updatedAt)||0};
   for(const[type,map]of Object.entries(raw)){for(const[id,record]of Object.entries(map||{})){payload.updatedAt=Math.max(payload.updatedAt,Number(record.updatedAt)||0);if(record.deleted)continue;const value=stripCloudFields(record);if(type==='days'||type==='monthlyReality')payload[type][id]=value;else payload[type].push(value)}}return Z.normalize(payload);
 }
 async function readCollection(type){const snap=await state.base.collection(TYPES[type]).get({source:'server'}),map={};snap.forEach(doc=>{map[doc.id]=doc.data()});return map}
@@ -128,7 +128,7 @@ async function flush(){
 function remoteChangesToPayload(type,snapshot){
   const current=clean(Z.getData()),maps=recordMaps(current);let changed=false,updatedAt=payloadTime(current);
   for(const change of snapshot.docChanges()){if(change.doc.metadata.hasPendingWrites)continue;const id=change.doc.id,remote=change.doc.data(),key=pendingKey(type,id),pending=state.pending[key];if(pending&&Number(pending.updatedAt)>=Number(remote.updatedAt||0))continue;updatedAt=Math.max(updatedAt,timestamp(remote.updatedAt));if(pending){delete state.pending[key];savePending()}const local=maps[type][id];if(local&&Number(local.updatedAt||0)>Number(remote.updatedAt||0))continue;if(remote.deleted){if(maps[type][id]){delete maps[type][id];changed=true}}else{maps[type][id]=stripCloudFields(remote);changed=true}}
-  if(!changed)return null;return Z.normalize({version:7,days:maps.days,purchases:Object.values(maps.purchases),stoppedUrges:Object.values(maps.stoppedUrges),recoverySnapshots:Object.values(maps.recoverySnapshots),monthlyReality:maps.monthlyReality,fixedCommitments:Object.values(maps.fixedCommitments),syncTests:current.syncTests||[],updatedAt});
+  if(!changed)return null;const merged=bundlePayload(maps,updatedAt);merged.syncTests=current.syncTests||[];return merged;
 }
 function listen(){
   stopListeners();
