@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.13.0';
+const APP_VERSION='0.13.1';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';

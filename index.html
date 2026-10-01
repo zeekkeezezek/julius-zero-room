@@ -12,8 +12,10 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.13.0">
-  <link rel="stylesheet" href="./light.css?v=0.13.0">
+  <link rel="stylesheet" href="./styles.css?v=0.13.1">
+  <link rel="stylesheet" href="./theme.css?v=0.13.1">
+  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.13.1">
+  <script src="./theme.js?v=0.13.1"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -353,12 +355,20 @@
       <span class="modal-kicker">SETTINGS / SYNC</span>
       <h2 id="settingsTitle">端末を待たせない同期。</h2>
       <p>記録は先にこの端末へ保存する。クラウド処理中でもアプリはすぐ使える。</p>
+      <section class="theme-settings" aria-labelledby="themeTitle">
+        <h3 id="themeTitle">APPEARANCE / テーマ</h3>
+        <div class="theme-options" role="group" aria-label="配色テーマ">
+          <button type="button" class="theme-option" data-theme-choice="light" aria-label="LIGHT · 明色" aria-pressed="true"><span class="theme-swatch light" aria-hidden="true"></span><span class="theme-name">LIGHT<small>明色</small></span></button>
+          <button type="button" class="theme-option" data-theme-choice="dark" aria-label="DARK · 暗色" aria-pressed="false"><span class="theme-swatch dark" aria-hidden="true"></span><span class="theme-name">DARK<small>暗色</small></span></button>
+        </div>
+        <p>この端末の表示だけを変更する。PCとスマホで別々に選べる。</p>
+      </section>
       <div id="cloudPanelBody"></div>
       <div class="settings-actions">
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.13.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.13.1 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -423,13 +433,13 @@
   <div class="toast" id="toast" role="status"></div>
   <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./app.js?v=0.13.0"></script>
-  <script defer src="./fund.js?v=0.13.0"></script>
-  <script defer src="./brake.js?v=0.13.0"></script>
+  <script defer src="./app.js?v=0.13.1"></script>
+  <script defer src="./fund.js?v=0.13.1"></script>
+  <script defer src="./brake.js?v=0.13.1"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.13.0"></script>
+  <script defer src="./cloud-sync.js?v=0.13.1"></script>
 </body>
 </html>

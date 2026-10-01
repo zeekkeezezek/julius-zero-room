@@ -87,22 +87,8 @@ body{background:radial-gradient(ellipse at 80% 0,#dfece6 0,transparent 42rem),ra
 .fund-quick button{background:#e4eee2;color:#365c40;border-color:#b8cbb4}
 .fund-comparison{background:#e8f2e6;border-color:#b2cdb5}.fund-comparison>span{color:#46684a}.fund-comparison>strong{color:var(--green)}
 .fund-comparison .fund-comparison-note,.fund-comparison small{color:#526951}
-/* Accessible nested archive; closed months don't create purchase rows. */
-.history-current-year{display:grid;gap:12px}
-.history-year-label{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:4px 2px 2px}
-.history-year-label h2{font:700 20px/1.5 var(--mono);margin:0}.history-year-label>span{font-size:11px;color:var(--muted)}
-.history-month>summary{cursor:pointer;list-style:none;border-bottom:0;min-height:74px;padding:17px 19px;gap:14px}
-.history-month>summary::-webkit-details-marker,.history-year>summary::-webkit-details-marker{display:none}
-.history-month>summary h3{margin:0;font:700 16px/1.5 var(--mono)}
-.history-month>summary h3 small{font:700 10px/1.4 var(--mono);color:var(--green);background:#e2eee4;padding:4px 6px;border-radius:5px;margin-left:9px}
-.history-month-head .history-month-count{display:block;font-size:11px;margin-top:7px;color:var(--muted);line-height:1.5}
-.history-month-head .history-chevron{font:700 24px/1 var(--mono);color:#496951;transition:transform .18s}
-.history-month[open]>.history-month-head{border-bottom:1px solid var(--line);background:#f0f5ee}
-.history-month[open]>.history-month-head .history-chevron{transform:rotate(180deg)}
-.history-year{border:1px solid #b6c7bc;border-radius:18px;background:#e9f0e8;overflow:hidden}
-.history-year-head{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:20px}
-.history-year-head h2{margin:0;font:700 20px/1.5 var(--mono)}.history-year-head>span{margin-left:auto;font-size:12px;color:var(--muted)}
-.history-year-head::after{content:'⌄';font:700 24px/1 var(--mono);color:#496951}.history-year[open]>.history-year-head::after{transform:rotate(180deg)}
-.history-year-body{display:grid;gap:12px;padding:0 14px 14px}
-.history-month>summary:focus-visible,.history-year>summary:focus-visible{outline:2px solid var(--blue);outline-offset:-3px}
-@media(max-width:760px){.history-year-label{display:block}.history-year-label>span{display:block;margin-top:4px}.history-month>summary h3{font-size:15px}.history-year-body{padding:0 9px 10px}.history-month>summary{padding:16px}.history-year-head{padding:17px}}
+/* Archive geometry is shared in theme.css; these are light-only details. */
+.history-month>summary h3 small{background:#e2eee4}
+.history-month-head .history-chevron,.history-year-head::after{color:#496951}
+.history-month[open]>.history-month-head{background:#f0f5ee}
+.history-year{border-color:#b6c7bc;background:#e9f0e8}
