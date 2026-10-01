@@ -1,0 +1,108 @@
+/* Soft daylight palette. Geometry and record semantics stay in styles.css. */
+:root{
+  color-scheme:light;
+  --bg:#f2f3ef;--bg-soft:#e9eeeb;--panel:#fafbf7;--panel-2:#eef2ee;--line:#ccd5d1;
+  --text:#303a40;--muted:#5c6a72;--faint:#65737a;
+  --green:#176b52;--green-soft:#e0eee6;--blue:#315ea9;--blue-soft:#e4edf8;
+  --orange:#965019;--orange-soft:#f5e9d9;--red:#a83b42;--purple:#704595;
+  --shadow:0 12px 36px rgba(51,75,65,.07);
+}
+body{background:radial-gradient(ellipse at 80% 0,#dfece6 0,transparent 42rem),radial-gradient(ellipse at 0 25rem,#e5edf3 0,transparent 36rem),var(--bg)}
+.brand-j{border-color:#a0b0a8;background:#f8faf5}
+.topbar{border-color:var(--line)}.icon-button,.month-button{background:var(--panel)}
+.icon-button:hover,.month-button:hover{border-color:#8ca399}
+.calendar-panel{background:linear-gradient(145deg,#fafbf7,#eef2ee);box-shadow:var(--shadow)}
+.day{background:#e7ece8;border-color:#dce2dd}.day-number{color:#53636c}
+.day.actionable:hover{border-color:#8aa398;background:#dfe8e0}
+.day.no-buy{background:linear-gradient(145deg,#e2f0e6,#d3e9de);border-color:#a7c9b5}
+.day.purchase{background:linear-gradient(145deg,#f7ecdc,#f0e1cf);border-color:#d9bc96}
+.day.today{background:linear-gradient(145deg,#e5edf8,#dfe9f5);box-shadow:inset 0 0 0 1px var(--blue);border-color:#9bb3d5}
+.day.today.no-buy{background:linear-gradient(145deg,#e2f0e6,#d3e9de)}
+.day.today.purchase{background:linear-gradient(145deg,#f7ecdc,#f0e1cf)}
+.day.no-buy .day-mark,.legend-no-buy{background:var(--green);color:#f7fbf8}
+.day.purchase .day-mark,.day.today.purchase .day-mark,.legend-purchase{background:var(--orange);color:#fff9ef}
+.day.unconfirmed .day-mark,.legend-unconfirmed{color:#68777d}
+.day.future{opacity:1;background:#edf0ec}.day.future .day-number{color:#718078}.day.prestart{opacity:.55}
+.fixed-day-badges>span,.legend-fixed{border-color:#879a93;color:#485c53;background:#f1f5ef}
+.fixed-day-badges>.caution-badge,.legend-caution{border-color:#bba068;color:#745624;background:#f7f0de}
+.day-mark.provisional{color:#536f60;border-color:#8caa98;background:#edf5ed}
+.metric-card{background:linear-gradient(145deg,#fafbf7,#f1f4ee);box-shadow:0 5px 18px #344e4010}
+.metric-card::after{opacity:.08}.combined-urge-metric.active,.hold-metric.active{background:linear-gradient(145deg,#f1eaf7,#f6f2fa);border-color:#c8b4d7}
+.urge-metric-grid>div:last-child strong,.hold-metric strong{color:var(--purple)}
+.today-status{background:linear-gradient(135deg,#e4f0e7,#f5f8f2);border-color:#b1cdbb;box-shadow:var(--shadow)}
+.today-status.purchase-today{background:linear-gradient(135deg,#f6ebdc,#faf5ec);border-color:#d9bd98}
+.today-status-main p{color:#516c5e}.purchase-today .today-status-main p{color:#745938}
+.today-status-facts{background:#f8faf580;border-color:#bbcfc1}.today-status-facts div{border-color:#c1d2c6}
+.urge-button{background:linear-gradient(145deg,#e4edf9,#dbe6f4);border-color:#a4bad9}
+.purchase-button{background:linear-gradient(145deg,#f5eadb,#eee1cf);border-color:#d1b58f}
+.urge-button .action-symbol{background:var(--blue);color:#f8fbff}
+.purchase-button .action-symbol{background:var(--orange);color:#fff9ef}
+.action-button small{color:#55677a}.purchase-button small{color:#765d40}
+.emergency-button{background:#f5e5e4;border-color:#d2a5a4;color:#9b3439}.emergency-button:hover{background:#eed9d7}
+.julius-line{background:#f8faf5;box-shadow:var(--shadow)}
+.caution-summary{background:linear-gradient(145deg,#f7f1e3,#f4f0e7);border-color:#d6c7a3}
+.caution-summary-head>span{color:#79602b}
+.balance-card.total{background:linear-gradient(145deg,#e6eef7,#f1f5f7);border-color:#b9cbdc}
+.balance-entry,.fixed-commitments{background:var(--panel)}
+.monthly-reality{background:linear-gradient(145deg,#f8faf5,#eff3ee);border-color:#bccac1}
+.reality-summary{background:#eef2ec}.reality-summary .shortage.danger{background:#f4e4e2}
+.reality-summary .needs-check strong{color:var(--orange)}
+.balance-stack small em{background:var(--blue-soft)}
+.planned-fixed-summary{background:#edf2ed}.planned-fixed-summary>strong{color:var(--text)}
+.payment-tag.merpay{color:#176955}.payment-tag.paidy{color:#704595}.payment-tag.cash{color:#586771}
+.fixed-purchase-fields{background:#edf2ed}.caution-purchase-fields{background:#f6eedf;border-color:#d1bc8d}
+.row-edit{background:#edf2ed;color:#455d51;border-color:#b9c7bf}.row-edit:hover{background:#e2ebe3;color:var(--green)}
+.danger-button{border-color:#c69596;color:var(--red)}.danger-text,.form-error{color:var(--red)}
+.stop-reality{border-color:#d2a5a4;color:var(--red)!important}.purchase-log-row{border-color:var(--line)}
+.julius-portrait{background:#e5ece5}
+.modal{background:rgba(57,75,68,.3);backdrop-filter:blur(9px)}
+.modal-card{background:linear-gradient(155deg,#fafbf7,#eef2ed);border-color:#bdcbc2;box-shadow:0 20px 70px #263d3530}
+.modal-close{background:#edf2ed;color:#576a60}
+.money-input,.text-input{background:#f9fbf6;border-color:#b9c8bf;color:var(--text)}
+.field-label,fieldset legend{color:#485e53}
+.radio-card{background:#f7f9f3}.radio-card:has(input:checked){background:#f3e8d8;border-color:#b1824d}
+.submit-button{background:var(--blue);color:#f8fbff;box-shadow:0 4px 12px #315ea918}
+.submit-button:hover{background:#274e90}.secondary-button{background:#eef3ec;color:var(--text)}
+.no-buy-choice{background:var(--green);color:#f5fbf7}.no-buy-choice span{background:#eef8f0;color:var(--green)}
+.purchase-choice{border-color:#c3a171;color:var(--orange)}.purchase-choice span{color:#fff7ea}
+.sync-summary,.sync-copy{background:#edf2ed}.sync-actions button{background:#e6ede6;color:var(--text)}
+.sync-actions .primary{background:var(--blue);color:#f8fbff}
+.bottom-nav{background:rgba(247,249,243,.94);border-color:#bccbc1;box-shadow:0 10px 36px #334c4020}
+.bottom-nav button.active{background:#dfe9e1;color:#285c47}
+.achievement{background:rgba(228,242,231,.97);border-color:#9dbfa9;box-shadow:0 18px 60px #29483930}.achievement p{color:#4c6859}
+.toast{background:#edf5eb;border-color:#aebfac;color:var(--text);box-shadow:var(--shadow)}
+.hold-undo{background:#e2f1e6;border-color:#8daf99;color:#304d3e;box-shadow:0 8px 30px #2b493025}.hold-undo button{color:#135b43}
+.day-spend-summary{border-color:var(--line)}.day-spend-summary small,.day-purchase-row small{color:var(--muted)}.day-purchase-row{border-color:var(--line)}
+.signal-group,.hold-history-row{border-color:var(--line)}.signal-group summary span{color:var(--green)}
+.signal-option{background:#f1f5ee;border-color:#c4d0c6}.signal-option:has(input:checked){background:#dfefe4;border-color:#88b19b;color:#21593f}.signal-option input{accent-color:var(--green)}
+.brake-financial>div{background:#edf2ed;border-color:#c4d0c6}.brake-financial span{color:var(--muted)}.brake-financial strong{color:var(--text)}
+.brake-messages{border-color:#8bb49d}.brake-actions .hold-recommend{color:var(--green)}
+.risk-level{color:var(--green)}.risk-caution{color:#8a591d}.risk-high,.risk-very-high{color:var(--red)}
+.hold-entry{background:#f6f8f1;border-color:#c0cec3}.hold-entry small,.hold-signals,.hold-history-row span{color:var(--muted)}
+.fund-card{background:linear-gradient(140deg,#e4f0e6,#f3f7ee);border-color:#b0cbb7;box-shadow:var(--shadow)}
+.fund-stats span{color:#436c55}.fund-current strong,.fund-plus{color:var(--green)}
+.fund-month{border-color:#b7cebd}.fund-milestone{color:#315e45}.fund-policy{color:#496951}
+.fund-target progress::-webkit-progress-bar{background:#c6d9cc}.fund-target progress::-webkit-progress-value{background:#398b66}
+.fund-history{background:var(--panel)}.fund-minus{color:#596a62}
+.fund-quick button{background:#e4eee2;color:#365c40;border-color:#b8cbb4}
+.fund-comparison{background:#e8f2e6;border-color:#b2cdb5}.fund-comparison>span{color:#46684a}.fund-comparison>strong{color:var(--green)}
+.fund-comparison .fund-comparison-note,.fund-comparison small{color:#526951}
+/* Accessible nested archive; closed months don't create purchase rows. */
+.history-current-year{display:grid;gap:12px}
+.history-year-label{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:4px 2px 2px}
+.history-year-label h2{font:700 20px/1.5 var(--mono);margin:0}.history-year-label>span{font-size:11px;color:var(--muted)}
+.history-month>summary{cursor:pointer;list-style:none;border-bottom:0;min-height:74px;padding:17px 19px;gap:14px}
+.history-month>summary::-webkit-details-marker,.history-year>summary::-webkit-details-marker{display:none}
+.history-month>summary h3{margin:0;font:700 16px/1.5 var(--mono)}
+.history-month>summary h3 small{font:700 10px/1.4 var(--mono);color:var(--green);background:#e2eee4;padding:4px 6px;border-radius:5px;margin-left:9px}
+.history-month-head .history-month-count{display:block;font-size:11px;margin-top:7px;color:var(--muted);line-height:1.5}
+.history-month-head .history-chevron{font:700 24px/1 var(--mono);color:#496951;transition:transform .18s}
+.history-month[open]>.history-month-head{border-bottom:1px solid var(--line);background:#f0f5ee}
+.history-month[open]>.history-month-head .history-chevron{transform:rotate(180deg)}
+.history-year{border:1px solid #b6c7bc;border-radius:18px;background:#e9f0e8;overflow:hidden}
+.history-year-head{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:20px}
+.history-year-head h2{margin:0;font:700 20px/1.5 var(--mono)}.history-year-head>span{margin-left:auto;font-size:12px;color:var(--muted)}
+.history-year-head::after{content:'⌄';font:700 24px/1 var(--mono);color:#496951}.history-year[open]>.history-year-head::after{transform:rotate(180deg)}
+.history-year-body{display:grid;gap:12px;padding:0 14px 14px}
+.history-month>summary:focus-visible,.history-year>summary:focus-visible{outline:2px solid var(--blue);outline-offset:-3px}
+@media(max-width:760px){.history-year-label{display:block}.history-year-label>span{display:block;margin-top:4px}.history-month>summary h3{font-size:15px}.history-year-body{padding:0 9px 10px}.history-month>summary{padding:16px}.history-year-head{padding:17px}}

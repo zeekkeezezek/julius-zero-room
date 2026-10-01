@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.12.0';
+const APP_VERSION='0.13.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -20,6 +20,7 @@ let editingFixedId=null;
 let pendingFixedEntry=null;
 let toastTimer=null;
 let achievementTimer=null;
+const historyMonthState=new Map(),historyYearState=new Map();
 
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
@@ -127,9 +128,24 @@ function renderMetrics(){
   const key=monthKey(calendarCursor),records=monthRecords(key),holds=activeHolds().length;renderCautionSummary(records);document.getElementById('noBuyCount').textContent=records.noBuy;document.getElementById('monthDays').textContent=`/ ${daysInMonth(calendarCursor)}`;document.getElementById('afterpayTotal').textContent=money(records.afterpay);document.getElementById('newMerpay').textContent=signedMoney(records.merpay);document.getElementById('newPaidy').textContent=signedMoney(records.paidy);document.getElementById('legacyAfterpay').textContent=signedMoney(records.legacy);document.getElementById('legacyAfterpayRow').hidden=!records.legacy;document.getElementById('urgeCount').textContent=data.stoppedUrges.filter(isStoppedUrge).length;document.getElementById('holdCount').textContent=holds;document.getElementById('holdCopy').textContent=holds?`待機中 ${holds}件。見送り確定で回数に加算。`:'保留中は、止まれた回数に加算しない。';document.getElementById('holdMetric').classList.toggle('active',holds>0);
 }
 function renderHistory(){
-  const list=document.getElementById('historyList'),keys=new Set([monthKey(today()),...Object.keys(data.days).map(d=>d.slice(0,7)),...data.purchases.map(p=>p.date.slice(0,7)),...data.stoppedUrges.map(u=>String(u.resolvedDate||u.date).slice(0,7))]),months=[...keys].filter(k=>k>=START_DATE.slice(0,7)).sort().reverse();
+  const list=document.getElementById('historyList'),keys=new Set([monthKey(today()),...Object.keys(data.days).map(d=>d.slice(0,7)),...data.purchases.map(p=>p.date.slice(0,7)),...data.stoppedUrges.map(u=>String(u.resolvedDate||u.date).slice(0,7))]),months=[...keys].filter(k=>/^\d{4}-(0[1-9]|1[0-2])$/.test(k)&&k>=START_DATE.slice(0,7)).sort().reverse();
   if(!months.length){list.innerHTML='<div class="history-empty">記録はまだない。</div>';return}
-  list.innerHTML=months.map(key=>{const[year,month]=key.split('-').map(Number),records=monthRecords(key),rows=[...records.purchases].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).map(item=>`<div class="purchase-log-row"><time>${item.date.slice(5).replace('-',' / ')}</time><div><b>${escapeHtml(item.name||'購入記録')}</b><small>${purchasePurposeLabel(item)} · ${item.medium==='digital'?'デジタル・課金':'物理物'} · <strong class="payment-tag ${item.payment}">${paymentLabel(item.payment)}</strong></small><small>最終更新 ${escapeHtml(formatUpdated(item.updatedAt))}</small></div><strong>${money(item.amount)}</strong><button class="row-edit" type="button" data-edit-purchase="${escapeHtml(item.id)}">編集</button></div>`).join('');return`<article class="history-month"><div class="history-month-head"><h2>${year}年 ${JP_MONTH_NAMES[month-1]}</h2><span>買わなかった日 ${records.noBuy}</span></div><div class="history-stats"><div><span>買わなかった日</span><b>${records.noBuy}</b></div><div><span>今月増えた後払い</span><b>${money(records.afterpay)}</b><small>メルペイ ${signedMoney(records.merpay)} / Paidy ${signedMoney(records.paidy)}</small></div><div><span>止まれた回数</span><b>${records.urges.length}</b></div></div><div class="purchase-log">${rows||'<div class="history-empty">購入記録なし</div>'}</div></article>`}).join('');
+  const years=[...new Set(months.map(key=>key.slice(0,4)))],currentYear=String(today().getFullYear());
+  list.innerHTML=years.map(year=>{const yearMonths=months.filter(key=>key.startsWith(year+'-'));if(year===currentYear)return`<section class="history-current-year" aria-label="${year}年の履歴"><div class="history-year-label"><h2>${year}年</h2><span>今月を開いて表示 · 過去の月も残している</span></div>${yearMonths.map(historyMonthHtml).join('')}</section>`;const open=historyYearState.get(year)===true;return`<details class="history-year" data-history-year="${year}"${open?' open':''}><summary class="history-year-head"><h2>${year}年</h2><span>${yearMonths.length}か月の記録</span></summary><div class="history-year-body" data-history-year-body="${year}">${open?yearMonths.map(historyMonthHtml).join(''):''}</div></details>`}).join('');
+}
+function historyMonthHtml(key){
+  const[year,month]=key.split('-').map(Number),records=monthRecords(key),current=key===monthKey(today()),open=historyMonthState.has(key)?historyMonthState.get(key):current;
+  return`<details class="history-month" data-history-month="${key}"${open?' open':''}><summary class="history-month-head"><div><h3>${year}年 ${JP_MONTH_NAMES[month-1]}${current?'<small>今月</small>':''}</h3><span class="history-month-count">購入 ${records.purchases.length}件 · 買わなかった日 ${records.noBuy}</span></div><span class="history-chevron" aria-hidden="true">⌄</span></summary><div data-history-month-body="${key}">${open?historyMonthContent(key):''}</div></details>`;
+}
+function historyMonthContent(key){
+  const records=monthRecords(key),rows=[...records.purchases].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).map(item=>`<div class="purchase-log-row"><time>${item.date.slice(5).replace('-',' / ')}</time><div><b>${escapeHtml(item.name||'購入記録')}</b><small>${purchasePurposeLabel(item)} · ${item.medium==='digital'?'デジタル・課金':'物理物'} · <strong class="payment-tag ${item.payment}">${paymentLabel(item.payment)}</strong></small><small>最終更新 ${escapeHtml(formatUpdated(item.updatedAt))}</small></div><strong>${money(item.amount)}</strong><button class="row-edit" type="button" data-edit-purchase="${escapeHtml(item.id)}">編集</button></div>`).join('');
+  return`<div class="history-stats"><div><span>買わなかった日</span><b>${records.noBuy}</b></div><div><span>この月に増えた後払い</span><b>${money(records.afterpay)}</b><small>メルペイ ${signedMoney(records.merpay)} / Paidy ${signedMoney(records.paidy)}</small></div><div><span>止まれた回数</span><b>${records.urges.length}</b></div></div><div class="purchase-log">${rows||'<div class="history-empty">購入記録なし</div>'}</div>`;
+}
+function handleHistoryToggle(event){
+  const detail=event.target,list=document.getElementById('historyList');if(!list.contains(detail))return;
+  const month=detail.dataset.historyMonth,year=detail.dataset.historyYear;
+  if(month){const expected=historyMonthState.has(month)?historyMonthState.get(month):month===monthKey(today());if(detail.open!==expected)historyMonthState.set(month,detail.open);const body=detail.querySelector('[data-history-month-body]');if(detail.open&&!body.innerHTML)body.innerHTML=historyMonthContent(month)}
+  if(year){historyYearState.set(year,detail.open);const body=detail.querySelector('[data-history-year-body]');if(detail.open&&!body.innerHTML){const keys=new Set([...Object.keys(data.days),...data.purchases.map(item=>item.date),...data.stoppedUrges.map(item=>String(item.resolvedDate||item.date))].map(date=>date.slice(0,7)));body.innerHTML=[...keys].filter(key=>key.startsWith(year+'-')&&key>=START_DATE.slice(0,7)).sort().reverse().map(historyMonthHtml).join('')}}
 }
 
 function sortedSnapshots(){return[...data.recoverySnapshots].sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt)}
@@ -297,6 +313,7 @@ function applyCloudData(payload){data=normalize(payload);localStorage.setItem(ST
 function setSyncState(state,label){const dot=document.getElementById('syncDot'),text=document.getElementById('syncLabel'),labels={local:'端末保存',saving:'同期中',synced:'同期済み',offline:'オフライン',error:'同期エラー'};dot.dataset.state=state;dot.title=labels[state]||label||state;text.textContent=({local:'LOCAL',saving:'SYNCING',synced:'SYNCED',offline:'LOCAL',error:'LOCAL'})[state]||String(label||state)}
 
 function bindEvents(){
+  document.getElementById('historyList').addEventListener('toggle',handleHistoryToggle,true);
   document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>hideModal(button)));document.querySelectorAll('.modal:not(.locked-modal)').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)hideModal(modal.id)}));document.addEventListener('keydown',event=>{if(event.key==='Escape'){const modal=document.querySelector('.modal.show:not(.locked-modal)');if(modal)hideModal(modal.id)}});
   document.getElementById('prevMonth').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar();renderMetrics()});document.getElementById('nextMonth').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar();renderMetrics()});document.getElementById('purchaseButton').addEventListener('click',()=>openPurchase());document.getElementById('confirmPurchase').addEventListener('click',()=>openPurchase(selectedDay));document.getElementById('confirmNoBuy').addEventListener('click',confirmNoBuy);document.getElementById('clearDayStatus').addEventListener('click',clearDayStatus);document.getElementById('purchaseForm').addEventListener('submit',savePurchase);document.getElementById('deletePurchase').addEventListener('click',deletePurchase);document.getElementById('urgeButton').addEventListener('click',openUrge);document.getElementById('stopButton').addEventListener('click',emergencyStop);
   document.getElementById('balanceForm').addEventListener('submit',saveBalance);document.getElementById('cancelBalanceEdit').addEventListener('click',resetBalanceForm);document.getElementById('deleteSnapshot').addEventListener('click',()=>editingSnapshotId&&deleteSnapshot(editingSnapshotId));document.getElementById('realityForm').addEventListener('submit',saveReality);document.getElementById('realityMonth').addEventListener('change',()=>{resetFixedForm();loadRealityForm()});

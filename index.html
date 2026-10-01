@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b0d10">
+  <meta name="theme-color" content="#f2f3ef">
   <meta name="description" content="予定外の趣味・衝動支出をZEROへ近づける、個人用NO BUY記録アプリ。">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ZERO ROOM">
   <title>JULIUS ZERO ROOM</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.12.0">
+  <link rel="stylesheet" href="./styles.css?v=0.13.0">
+  <link rel="stylesheet" href="./light.css?v=0.13.0">
 </head>
 <body>
   <div class="app-shell">
@@ -357,7 +358,7 @@
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.12.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.13.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -422,13 +423,13 @@
   <div class="toast" id="toast" role="status"></div>
   <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./app.js?v=0.12.0"></script>
-  <script defer src="./fund.js?v=0.12.0"></script>
-  <script defer src="./brake.js?v=0.12.0"></script>
+  <script defer src="./app.js?v=0.13.0"></script>
+  <script defer src="./fund.js?v=0.13.0"></script>
+  <script defer src="./brake.js?v=0.13.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.12.0"></script>
+  <script defer src="./cloud-sync.js?v=0.13.0"></script>
 </body>
 </html>
