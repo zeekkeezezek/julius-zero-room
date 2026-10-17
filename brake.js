@@ -5,6 +5,8 @@ const GROUPS=[['価格・希少性',[
  ['cheap','相場より安い'],['sale','セール・値下げ中'],['limited','限定商品'],['deadline','期間限定'],['restock','再販商品'],['few','残りわずか'],['rival','誰かに買われそう'],['unknown','次いつ買えるか分からない']
 ]],['心理状態',[
  ['now','今すぐ欲しい'],['loss','買わないと損した気がする'],['lose','誰かに買われたら負けた気がする'],['avoid','相談したら止められそうなので相談したくない'],['stress','ストレス・怒り・落ち込み中'],['mood','気分転換として買いたい'],['already','今日はすでに別の物を買っている']
+]],['反動買い・ご褒美',[
+ ['restraint','最近、我慢が続いている'],['earned','「こんなに我慢したから今日はいい」と思っている'],['bundle','以前HOLDした商品をまとめて買いたくなっている'],['no-buy-credit','今月NO BUY DAYSが多いから使っていい気がする'],['reward','断捨離や返済を頑張ったご褒美にしたい'],['sale-reward','売却益が入ったので使いたい'],['month-reward','「今月頑張ったから」という理由で買おうとしている']
 ]],['在庫・創作関連',[
  ['similar','似た物をすでに持っている'],['stock','家にまだ使っていない在庫がある'],['someday','「いつか使う」が理由'],['future','未来のやる気を前提にしている'],['discontinued','廃盤・品切れが怖い'],['spare','予備として欲しい'],['complete','全色・全部入り・コンプリート欲がある'],['space','置き場所が決まっていない']
 ]],['支払い関連',[
@@ -12,8 +14,9 @@ const GROUPS=[['価格・希少性',[
 ]]];
 const LABELS=Object.fromEntries(GROUPS.flatMap(([,items])=>items));
 const STRONG=new Set(['rival','avoid','stress','credit','restored','already']);
+const REBOUND=new Set(['restraint','earned','bundle','no-buy-credit','reward','sale-reward','month-reward']);
 const SCARCE=new Set(['rival','limited','deadline','restock','few','unknown','discontinued']);
-const EMERGENCY=[['rival','誰かに買われそう'],['cheap','相場より安い'],['limited','限定・復刻'],['credit','後払いなら買える'],['stress','ストレス・怒り中'],['avoid','相談したら止められると思って避けた'],['similar','似た物をすでに持っている'],['already','今日はすでに買い物をしている']];
+const EMERGENCY=[['rival','誰かに買われそう'],['cheap','相場より安い'],['limited','限定・復刻'],['credit','後払いなら買える'],['stress','ストレス・怒り中'],['avoid','相談したら止められると思って避けた'],['similar','似た物をすでに持っている'],['already','今日はすでに買い物をしている'],['earned','我慢した分、今日は買っていいと思っている'],['bundle','HOLDした物をまとめて買いたい']];
 const MESSAGES={
  rival:['他人に買われても、君は負けていない。その人が金を出しただけだ。君の財布は助かった。','誰かの決済に、君が付き合う必要はない。'],
  cheap:['安い商品と、今の君に買える商品は同じではない。','お得は、買わないより安くない。'],
@@ -42,17 +45,24 @@ const MESSAGES={
  credit:['後払い可能額は、君の金ではない。未来の給料へ請求を送れる枠だ。','後払い可能額は資産ではない。'],
  points:['ポイントは収入ではない。1％の還元より、100％支出しない方が強い。','ポイントより、後払いゼロ。'],
  proceeds:['不用品が売れた金は、買い物権ではない。返済余力が戻っただけだ。'],
- restored:['返済で戻った枠は、買い物権ではない。借り直せる上限が戻っただけだ。']
+ restored:['返済で戻った枠は、買い物権ではない。借り直せる上限が戻っただけだ。'],
+ restraint:['我慢が続いたことと、今日の支出を増やせることは別だ。'],
+ earned:['我慢した日数は、買い物許可券ではない。','「頑張ったから」を、決済の理由にするな。'],
+ bundle:['HOLDは購入予定の一覧ではない。一件ずつ判断を終えろ。'],
+ 'no-buy-credit':['NO BUY DAYSは、未来の買い物許可を貯める数字ではない。'],
+ reward:['返済や片付けの成果を、次の購入で使い直すな。'],
+ 'sale-reward':['売った金は、次の買い物の予算ではない。'],
+ 'month-reward':['今月の努力と、今回の必要性は分けて考えろ。']
 };
 const GENERAL=['買わなかったら、金と空間が残る。','欲しいままでいい。今は決済を待て。','今日買わなかった物は、君から何も奪っていない。','入口はもう十分ある。今は一つを通れ。'];
 let draft=null,lastMessage='',resultVisible=false;
 let holdEdit=null,undoState=null,undoTimer=null;
 const copy=value=>JSON.parse(JSON.stringify(value));
 function selected(root){return Array.from($(root).querySelectorAll('input:checked')).map(input=>input.value)}
-function risk(signals){const unique=[...new Set(signals.filter(id=>LABELS[id]))],score=unique.reduce((n,id)=>n+(STRONG.has(id)?2:1),0);return{count:unique.length,score,level:score>=6?'VERY HIGH':score>=4?'HIGH':score>=2?'CAUTION':'LOW'}}
-function recommend(signals){return signals.some(id=>SCARCE.has(id))}
+function risk(signals){const unique=[...new Set(signals.filter(id=>LABELS[id]))],score=unique.reduce((n,id)=>n+(REBOUND.has(id)?3:STRONG.has(id)?2:1),0);return{count:unique.length,score,level:score>=6?'VERY HIGH':score>=4?'HIGH':score>=2?'CAUTION':'LOW'}}
+function recommend(signals){return signals.some(id=>SCARCE.has(id)||REBOUND.has(id))}
 function chooseMessages(signals,random=Math.random){
- const ids=[...new Set(signals)].filter(id=>MESSAGES[id]).sort((a,b)=>Number(STRONG.has(b))-Number(STRONG.has(a)));
+ const weight=id=>REBOUND.has(id)?3:STRONG.has(id)?2:1,ids=[...new Set(signals)].filter(id=>MESSAGES[id]).sort((a,b)=>weight(b)-weight(a));
  const pools=ids.length?ids.slice(0,3).map(id=>MESSAGES[id]):[GENERAL];
  return pools.map(pool=>{const choices=pool.length>1?pool.filter(message=>message!==lastMessage):pool;const message=choices[Math.floor(random()*choices.length)];lastMessage=message;return message});
 }
@@ -66,6 +76,7 @@ function signalHtml(items){return items.map(([id,label])=>`<label class="signal-
 function actionsHtml(emergency=false,signals=[]){const preferred=recommend(signals);return`<div class="brake-actions">${preferred?'<p class="hold-recommend">焦りが強まる条件だ。24時間HOLDを推奨。</p>':''}<button type="button" data-brake-action="hold24" class="${preferred?'submit-button':'secondary-button'}">24時間HOLD${preferred?' · 推奨':''}</button><button type="button" data-brake-action="hold10" class="secondary-button">10分${emergency?'待つ':'だけ待つ'}</button><button type="button" data-brake-action="decline" class="submit-button">今回は買わない</button>${emergency?'':'<button type="button" data-brake-action="close" class="text-button">閉じる</button>'}</div>`}
 function open(source){
  draft={id:Z.uid('urge'),source,signals:[],name:'',amount:null,consumed:false};resultVisible=false;
+ $('brakeTodaySpend').innerHTML=window.ZeroFeedback?.prePurchaseHtml()||'';
  if(source==='emergency'){
   $('emergencySignals').innerHTML=signalHtml(EMERGENCY);$('emergencyName').value='';$('emergencyAmount').value='';
   const optional=document.querySelector('#stopModal details');if(optional)optional.open=false;
@@ -89,8 +100,8 @@ function takeAction(action){
  const entry={id:draft.id,date:Z.dateKey(),source:draft.source,name:draft.name,amount:draft.amount,signals:[...draft.signals],risk:risk(draft.signals).level,outcome:declined?'declined':'pending',holdActive:!declined,holdStartedAt:declined?null:now,holdUntil:declined?null:now+duration,createdAt:now,updatedAt:now,...(declined?{resolvedAt:now,resolvedDate:Z.dateKey()}:{} )};
  if(Z.getData().stoppedUrges.some(item=>item.id===entry.id))return;
  Z.getData().stoppedUrges.push(entry);if(declined)rememberUndo(null,entry);draft.consumed=true;Z.hideModal(draft.source==='emergency'?'stopModal':'urgeModal');
- persist(declined?'見送りを記録した。STOPPED URGES +1。':'HOLDに入れた。終了後は「HOLDを確認」から結果を残せる。');
- Z.setJulius(declined?'……よく止まった。今回は君の勝ちだ。':'今は決済を待つ。それだけでいい。');
+ persist(declined?'CLOSED / 見送り終了。一件の判断を終えた。':'HOLDに入れた。購入予定ではない。終了後に判断を終えろ。');
+ Z.setJulius(declined?'今回は買わないと決めた。この一件は終了だ。次の購入権にはならない。':'今は決済を待つ。HOLDを欲しい物の保存場所にするな。');
 }
 function rememberUndo(before,after){
   undoState={id:after.id,before:before?copy(before):null,after:JSON.stringify(after)};
@@ -111,7 +122,7 @@ function editHold(id){
   holdEdit={id,updatedAt:item.updatedAt};$('holdsList').hidden=true;$('holdEditor').hidden=false;
   const purchases=[...Z.getData().purchases].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt),linked=purchases.find(p=>p.id===item.purchaseId);
   $('holdEditor').innerHTML=`<h3>HOLDの結果を訂正</h3><p>${esc(item.name||'商品名未入力')} · ${item.amount==null?'金額未入力':Z.money(item.amount)}</p>
-    <label class="field-label" for="holdOutcome">結果</label><select class="text-input" id="holdOutcome"><option value="pending">保留・結果待ちへ戻す</option><option value="declined">買わなかった</option><option value="purchased">買った</option></select>
+    <label class="field-label" for="holdOutcome">結果</label><select class="text-input" id="holdOutcome"><option value="pending">保留・結果待ちへ戻す</option><option value="declined">CLOSED / 見送り終了</option><option value="cash-review">現金の予算を確保してから再検討</option><option value="purchased">購入した</option></select>
     <div id="holdPurchaseControls"><label class="field-label" for="holdPurchaseSelect">購入履歴と紐付ける</label><select class="text-input" id="holdPurchaseSelect"><option value="">紐付けなし</option>${purchases.map(p=>`<option value="${esc(p.id)}">${esc(p.date)} · ${esc(p.name||'購入記録')} · ${Z.money(p.amount)}</option>`).join('')}</select>
     <p class="brake-hint">記録済みなら履歴を選んで「結果を保存」。金額を追加せず紐付ける。</p><button type="button" class="secondary-button" data-edit-hold-action="purchase">${linked?'紐付いた購入を訂正':'購入を記録する（名前・金額を引き継ぐ）'}</button></div>
     <p class="brake-hint">結果の訂正や取り消しは、購入履歴を削除しない。購入内容の訂正・削除は購入記録側で行える。</p><div class="brake-actions"><button type="button" class="submit-button" data-edit-hold-action="save">結果を保存</button><button type="button" class="text-button" data-edit-hold-action="cancel">戻る</button></div>`;
@@ -121,7 +132,7 @@ function togglePurchaseControls(){$('holdPurchaseControls').hidden=$('holdOutcom
 function saveHoldResult(id,outcome,purchaseId='',expectedUpdatedAt){
   const item=Z.getData().stoppedUrges.find(value=>value.id===id);
   if(!item||item.updatedAt!==expectedUpdatedAt){Z.toast('別の操作でHOLDが変更された。開き直してくれ。');return false}
-  if(!['pending','declined','purchased'].includes(outcome))return false;
+  if(!['pending','declined','cash-review','purchased'].includes(outcome))return false;
   if(purchaseId&&outcome==='purchased'&&!Z.getData().purchases.some(p=>p.id===purchaseId)){Z.toast('選んだ購入記録が見つからない。開き直してくれ。');return false}
   const before=copy(item),now=Math.max(Date.now(),item.updatedAt+1);
   item.outcome=outcome;item.holdActive=outcome==='pending';item.updatedAt=now;
@@ -137,24 +148,30 @@ function attachPurchase(id,purchaseId){
   undoState=null;$('holdUndo').hidden=true;closeEditor();
 }
 function time(value){return new Date(value).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+function extensionCount(item){return Number.isSafeInteger(item.extensionCount)&&item.extensionCount>0?item.extensionCount:0}
+function extensionWarning(item){return extensionCount(item)>=3?'<p class="hold-extension-alert">これは保留ではなく、欲しい気持ちを保存しているだけではないか。延長を購入予定に変えるな。一件ずつ判断を終えろ。</p>':''}
 function renderHolds(){
  const all=Z.getData().stoppedUrges.filter(item=>item.outcome),pending=all.filter(item=>item.outcome==='pending').sort((a,b)=>a.holdUntil-b.holdUntil),done=all.filter(item=>item.outcome!=='pending').sort((a,b)=>b.updatedAt-a.updatedAt);
  const historyOpen=document.querySelector('#holdsList .hold-history')?.open;
  const ready=pending.filter(item=>item.holdUntil<=Date.now()).length;$('reviewHolds').textContent=ready?`HOLDを確認 · 結果待ち ${ready}件`:`HOLDを確認${pending.length?` · ${pending.length}件`:''}`;
- $('holdsList').innerHTML=(pending.map(item=>{const ended=item.holdUntil<=Date.now(),remaining=Math.max(1,Math.ceil((item.holdUntil-Date.now())/60000));return`<article class="hold-entry"><div class="hold-entry-heading"><b>${esc(item.name||'商品名未入力')}</b><strong>${item.amount==null?'金額未入力':Z.money(item.amount)}</strong></div><p>${ended?'時間を置いた。結果を記録できる。':`待機中 · あと約${remaining}分`}</p><small>登録 ${time(item.createdAt)}<br>HOLD開始 ${time(item.holdStartedAt||item.createdAt)} · 終了 ${time(item.holdUntil)}</small>${item.signals?.length?`<p class="hold-signals">${item.signals.map(id=>esc(LABELS[id]||id)).join(' / ')}</p>`:''}<div class="brake-actions">${ended?`<button type="button" class="secondary-button" data-hold-id="${esc(item.id)}" data-hold-action="extend">まだ欲しい · 24時間HOLD</button>`:''}<button type="button" class="submit-button" data-hold-id="${esc(item.id)}" data-hold-action="decline">${ended?'もういらない · 買わなかった':'買わなかったと確定'}</button><button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="bought">買った</button><button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="edit">結果を訂正</button></div></article>`}).join('')||'<p class="brake-hint">結果待ちのHOLDはない。</p>')+(done.length?`<details class="hold-history"${historyOpen?' open':''}><summary>今回の機能で残した履歴 · ${done.length}件</summary>${done.map(item=>`<div class="hold-history-row"><b>${esc(item.name||'商品名未入力')}</b><span>${item.outcome==='declined'?'見送り':'購入済み'} · ${time(item.resolvedAt||item.updatedAt)}</span><button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="edit">訂正${item.outcome==='purchased'?'・購入記録':''}</button></div>`).join('')}</details>`:'');
+ $('holdsList').innerHTML=(pending.map(item=>{
+  const ended=item.holdUntil<=Date.now(),remaining=Math.max(1,Math.ceil((item.holdUntil-Date.now())/60000));
+  return`<article class="hold-entry"><div class="hold-entry-heading"><b>${esc(item.name||'商品名未入力')}</b><strong>${item.amount==null?'金額未入力':Z.money(item.amount)}</strong></div><p>${ended?'時間を置いた。この一件の判断を終えろ。':`待機中 · あと約${remaining}分`}</p><small>登録 ${time(item.createdAt)}<br>HOLD開始 ${time(item.holdStartedAt||item.createdAt)} · 終了 ${time(item.holdUntil)} · 延長 ${extensionCount(item)}回</small>${extensionWarning(item)}${item.signals?.length?`<p class="hold-signals">${item.signals.map(id=>esc(LABELS[id]||id)).join(' / ')}</p>`:''}<div class="brake-actions"><button type="button" class="submit-button" data-hold-id="${esc(item.id)}" data-hold-action="decline">CLOSED / 見送り終了</button><button type="button" class="secondary-button" data-hold-id="${esc(item.id)}" data-hold-action="cash">現金の予算を確保してから再検討</button><button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="bought">購入した</button>${ended?`<button type="button" class="secondary-button" data-hold-id="${esc(item.id)}" data-hold-action="extend">もう一度24時間だけHOLD</button>`:''}<button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="edit">結果を訂正</button></div></article>`;
+ }).join('')||'<p class="brake-hint">結果待ちのHOLDはない。</p>')+(done.length?`<details class="hold-history"${historyOpen?' open':''}><summary>判断を終えた履歴 · ${done.length}件</summary>${done.map(item=>`<div class="hold-history-row"><b>${esc(item.name||'商品名未入力')}</b><span>${item.outcome==='declined'?'CLOSED / 見送り終了':item.outcome==='cash-review'?'CASH REVIEW / 現金の予算を確保してから再検討（未購入）':'購入済み'} · ${time(item.resolvedAt||item.updatedAt)}</span>${item.outcome==='cash-review'?'<p>現在のHOLDは終了。購入許可でも、現金を確保した記録でもない。実際に確保し、必要性を確かめてから再検討する。</p>':''}${extensionWarning(item)}<button type="button" class="text-button" data-hold-id="${esc(item.id)}" data-hold-action="edit">訂正${item.outcome==='purchased'?'・購入記録':''}</button></div>`).join('')}</details>`:'');
 }
 function resolveHold(id,action){
  const item=Z.getData().stoppedUrges.find(value=>value.id===id);if(!item||item.outcome!=='pending')return;
- const before=copy(item),now=Math.max(Date.now(),item.updatedAt+1);if(action==='extend'){if(item.holdUntil>now)return;item.holdStartedAt=now;item.holdUntil=now+86400000;item.updatedAt=now;persist('もう24時間置く。見送り回数は増やしていない。');return}
- if(!['decline','bought'].includes(action))return;
- item.outcome=action==='decline'?'declined':'purchased';item.holdActive=false;item.resolvedAt=now;item.resolvedDate=Z.dateKey();item.updatedAt=now;
+ const before=copy(item),now=Math.max(Date.now(),item.updatedAt+1);if(action==='extend'){if(item.holdUntil>now)return;item.holdStartedAt=now;item.holdUntil=now+86400000;item.extensionCount=extensionCount(item)+1;item.updatedAt=now;persist(extensionCount(item)>=3?'3回以上延長している。欲しい気持ちを保存するだけになっていないか。':'もう24時間置く。購入許可も見送り回数も増やしていない。');return}
+ if(!['decline','bought','cash'].includes(action))return;
+ item.outcome=action==='decline'?'declined':action==='cash'?'cash-review':'purchased';item.holdActive=false;item.resolvedAt=now;item.resolvedDate=Z.dateKey();item.updatedAt=now;
  rememberUndo(before,item);
- persist(action==='decline'?'買わなかったと確定した。STOPPED URGES +1。':'HOLDを購入済みにした。購入履歴が未入力なら、この後に記録してくれ。');
- if(action==='decline')Z.setJulius('……よく止まった。今回は君の勝ちだ。');
- else editHold(id);
+ persist(action==='decline'?'CLOSED / 見送り終了。この一件の判断を終えた。':action==='cash'?'HOLDを終了した。現金確保後の再検討だ。積立や購入は自動記録していない。':'HOLDを購入済みにした。購入履歴が未入力なら、この後に記録してくれ。');
+ if(action==='decline')Z.setJulius('この一件は見送り終了だ。次の買い物の権利にはならない。');
+ else if(action==='bought')editHold(id);
 }
 function refresh(){
  renderHolds();if(resultVisible&&$('diagnosisReality'))$('diagnosisReality').innerHTML=financialHtml();
+ if($('urgeModal').classList.contains('show'))$('brakeTodaySpend').innerHTML=window.ZeroFeedback?.prePurchaseHtml()||'';
  if($('stopModal').classList.contains('show'))$('emergencyReality').innerHTML=financialHtml(true);
 }
 function onAction(event){const button=event.target.closest('[data-brake-action]');if(button)takeAction(button.dataset.brakeAction)}
