@@ -40,14 +40,14 @@ function formatDataBytes(bytes){
   return `${(bytes/(1024*1024)).toFixed(2)} MB`;
 }
 function syncPayloadSizeHtml(){
-  return `<section class="cloud-data-size" aria-label="同期データ量"><div><span>同期データ量</span><strong>${formatDataBytes(getSyncPayloadBytes())}</strong></div><span class="estimate-chip">推定</span><p>同期対象データの推定サイズ。未送信分を含む、この端末の記録から計算。Firestore全体の使用容量ではない。</p></section>`;
+  return `<section class="cloud-data-size" aria-label="同期データ量"><div><span>同期データ量</span><strong>${formatDataBytes(getSyncPayloadBytes())}</strong></div><span class="estimate-chip">推定</span><button type="button" class="help-button" data-help="sync-size" aria-label="同期データ量の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></section>`;
 }
 function statusLabel(){return({local:'LOCAL',saving:'SYNCING',synced:'SYNCED',offline:'LOCAL',error:'LOCAL'})[state.status]||state.label}
 function renderPanel(){
   const body=document.getElementById('cloudPanelBody');if(!body)return;
   const sizeHtml=syncPayloadSizeHtml();
-  if(!state.configured){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存</b></div><div class="sync-copy">この端末への保存は動作している。Firebase設定を読み込める公開URLでは、PCとスマホの同期を利用できる。</div>'+sizeHtml;return}
-  if(!state.user){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存</b></div><div class="sync-copy">Googleアカウントでログインすると、PCとスマホで同じZERO ROOMを使える。ログイン前も端末保存は止まらない。</div><div class="sync-actions"><button class="primary" onclick="zeroCloudSignIn()">Googleでログイン</button></div>'+sizeHtml;return}
+  if(!state.configured){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存 · Firebase未設定</b></div>'+sizeHtml;return}
+  if(!state.user){body.innerHTML='<div class="sync-summary"><span>同期状態</span><b>端末保存</b></div><div class="sync-actions"><button class="primary" onclick="zeroCloudSignIn()">Googleでログイン</button></div>'+sizeHtml;return}
   const pendingCount=Object.keys(state.pending).length,retry=state.status==='error'?'<button class="primary" onclick="zeroCloudRetry()">再試行</button>':'';
   body.innerHTML=`<div class="sync-summary"><span>同期状態</span><b>${escapeHtml(statusLabel())}</b></div>${state.error?`<div class="sync-copy">${escapeHtml(state.error)}</div>`:''}<div class="sync-copy">${escapeHtml(state.user.email||'Googleアカウント')}<br>最終同期：${escapeHtml(formatTime(state.lastSyncAt))}<br>未送信：${pendingCount}件 · 端末キャッシュ：${escapeHtml(state.cache)}<br>${escapeHtml(Z.summaryText())}</div>${sizeHtml}<div class="sync-actions">${retry}<button onclick="zeroCloudSignOut()">ログアウト</button></div>`;
 }

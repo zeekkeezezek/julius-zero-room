@@ -12,11 +12,12 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.14.0">
-  <link rel="stylesheet" href="./theme.css?v=0.14.0">
-  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.14.0">
-  <link rel="stylesheet" href="./feedback.css?v=0.14.0">
-  <script src="./theme.js?v=0.14.0"></script>
+  <link rel="stylesheet" href="./styles.css?v=0.14.1">
+  <link rel="stylesheet" href="./theme.css?v=0.14.1">
+  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.14.1">
+  <link rel="stylesheet" href="./feedback.css?v=0.14.1">
+  <link rel="stylesheet" href="./help.css?v=0.14.1">
+  <script src="./theme.js?v=0.14.1"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -35,10 +36,7 @@
     <main>
       <section class="view active" id="homeView" aria-labelledby="homeTitle">
         <div class="home-heading">
-          <div>
-            <span class="kicker">MONTHLY CONTROL</span>
-            <h1 id="homeTitle">ZEROを守る。</h1>
-          </div>
+          <h1 class="functional-title" id="homeTitle">MONTHLY CONTROL</h1>
           <span class="live-chip"><i></i> LIVE</span>
         </div>
 
@@ -66,7 +64,7 @@
             <button class="month-button" id="prevMonth" aria-label="前の月">←</button>
             <div>
               <span id="calendarYear">2026</span>
-              <h2 id="calendarTitle">SEPTEMBER</h2>
+              <div class="heading-with-help"><h2 id="calendarTitle">SEPTEMBER</h2><button type="button" class="help-button" data-help="calendar" aria-label="カレンダーの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
             </div>
             <button class="month-button" id="nextMonth" aria-label="次の月">→</button>
           </div>
@@ -81,53 +79,48 @@
             <span><i class="legend-live"></i>今日</span>
             <span><i class="legend-fixed">S</i>固定サービス</span><span><i class="legend-fixed">P</i>固定月パス</span>
             <span><i class="legend-caution">C</i>注意支出</span>
-            <span class="spend-legend">赤系・!：趣味・衝動の1日合計1万円以上（!!：5万円以上）</span>
-            <span class="provisional-legend">薄い✓：固定・注意支出のみ記録。NO BUYは日付をタップして記録</span>
           </div>
         </section>
 
         <section class="metrics" aria-label="今月の記録">
           <article class="metric-card primary-metric">
-            <span>NO BUY DAYS</span>
+            <span class="metric-label">NO BUY DAYS<button type="button" class="help-button" data-help="no-buy" aria-label="NO BUY DAYSの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></span>
             <strong><b id="noBuyCount">0</b><small id="monthDays">/ 30</small></strong>
-            <p>予定外の趣味・衝動買いをしなかった日。必要品・固定支出・注意支出とは分ける。</p>
             <p class="metric-policy">買わなかった日は、買っていい日を貯めているのではない。</p>
           </article>
           <article class="metric-card afterpay-metric">
-            <span>NEW AFTERPAY</span>
+            <span class="metric-label">NEW AFTERPAY<button type="button" class="help-button" data-help="afterpay" aria-label="NEW AFTERPAYの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></span>
             <strong id="afterpayTotal">¥0</strong>
             <div class="afterpay-breakdown"><span>MERPAY <b id="newMerpay">+¥0</b></span><span>PAIDY <b id="newPaidy">+¥0</b></span><span id="legacyAfterpayRow" hidden>旧記録 <b id="legacyAfterpay">+¥0</b></span></div>
-            <p>今月、新しく未来へ回した支払い。</p>
             <p class="stop-line" id="afterpayStopLine" hidden><b>STOP LINE</b> ここから増やさない。使っていい予算ではない。</p>
           </article>
           <article class="metric-card urge-metric combined-urge-metric" id="holdMetric">
-            <span>URGE CONTROL</span>
+            <span class="metric-label">URGE CONTROL<button type="button" class="help-button" data-help="hold" aria-label="URGE CONTROLとHOLDの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></span>
             <div class="urge-metric-grid">
               <div><small>止まれた回数</small><strong id="urgeCount">0</strong><p>累計 · 使っていい回数ではない。</p></div>
-              <div><small>現在の保留</small><strong id="holdCount">0</strong><p id="holdCopy">見送り確定で回数に加算。</p></div>
+              <div><small>現在の保留</small><strong id="holdCount">0</strong><p id="holdCopy" hidden></p></div>
             </div>
             <button class="text-button" id="reviewHolds" type="button">HOLDを確認</button>
           </article>
         </section>
 
-        <div class="big-spend-stat"><span>BIG SPEND DAYS</span><strong id="bigSpendDays">0日</strong><small>趣味・衝動の1日合計1万円以上</small></div>
+        <div class="big-spend-stat"><span>BIG SPEND DAYS</span><strong id="bigSpendDays">0日</strong><button type="button" class="help-button" data-help="big-spend" aria-label="BIG SPEND DAYSの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
         <section id="monthlyAlerts" aria-label="新規後払いの月別比較" hidden></section>
 
         <section class="caution-summary" aria-label="表示月の注意支出">
-          <div class="caution-summary-head"><span>CAUTION SPEND <small>表示月の実績</small></span><strong id="cautionTotal">¥0</strong></div>
+          <div class="caution-summary-head"><span>CAUTION SPEND<button type="button" class="help-button" data-help="caution" aria-label="CAUTION SPENDの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></span><strong id="cautionTotal">¥0</strong></div>
           <dl><div><dt>お菓子・嗜好品</dt><dd id="cautionSnack">¥0</dd></div><div><dt>任意の日用品</dt><dd id="cautionGoods">¥0</dd></div><div><dt>その他</dt><dd id="cautionOther">¥0</dd></div></dl>
-          <p>一回は少額でも、月で見れば支出だ。</p>
         </section>
 
         <section class="action-panel" aria-label="今日の操作">
           <button class="action-button urge-button" id="urgeButton">
             <span class="action-symbol">!</span>
-            <span><b>欲しい！！</b><small>欲しい物と危険サインを確認</small></span>
+            <span><b>欲しい！！</b></span>
             <em>→</em>
           </button>
           <button class="action-button purchase-button" id="purchaseButton">
             <span class="action-symbol">¥</span>
-            <span><b>買った。記録する</b><small>隠さず、事実だけ残す</small></span>
+            <span><b>買った。記録する</b></span>
             <em>→</em>
           </button>
           <button class="emergency-button" id="stopButton"><span>J</span>ジュリアス、止めろ</button>
@@ -137,42 +130,37 @@
 
       <section class="view" id="historyView" aria-labelledby="historyTitle">
         <div class="section-heading">
-          <span class="kicker">MONTHLY ARCHIVE</span>
-          <h1 id="historyTitle">記録は消えない。</h1>
-          <p>勝った日も、買った日も、ただ事実として残す。</p>
+          <h1 class="functional-title" id="historyTitle">MONTHLY ARCHIVE</h1>
         </div>
         <div class="history-list" id="historyList"></div>
       </section>
 
       <section class="view" id="recoveryView" aria-labelledby="recoveryTitle">
         <div class="section-heading recovery-heading">
-          <span class="kicker">BALANCE RECOVERY</span>
-          <h1 id="recoveryTitle">穴を、少しずつ浅くする。</h1>
-          <p>現在表示されている残高を、そのまま記録する。購入履歴からは計算しない。</p>
+          <div class="heading-with-help"><h1 class="functional-title" id="recoveryTitle">BALANCE RECOVERY</h1><button type="button" class="help-button" data-help="recovery" aria-label="BALANCE RECOVERYの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
         </div>
         <section class="monthly-reality" aria-labelledby="realityTitle">
           <div class="reality-heading">
-            <div><span class="kicker">MONTHLY REALITY</span><h2 id="realityTitle">今月の現実を記録する。</h2><p>余裕を探すためではない。危険な時に、現在地へ戻るための数字だ。</p></div>
+            <div class="heading-with-help"><h2 class="functional-title" id="realityTitle">MONTHLY REALITY</h2><button type="button" class="help-button" data-help="reality" aria-label="MONTHLY REALITYの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
             <label class="month-picker"><span>対象月</span><input class="text-input" id="realityMonth" type="month" min="2026-09"></label>
           </div>
           <div class="reality-summary" id="realitySummary"></div>
           <div class="planned-fixed-summary" id="plannedFixedSummary"></div>
           <form id="realityForm">
             <div class="reality-input-grid">
-              <label><span>今月これから入る予定額</span><div class="money-input small"><span>¥</span><input name="expectedIncomeRemaining" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今月これから入る予定で、まだ手持ちには含まれていない金。</small></label>
-              <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div><small class="field-help">今この瞬間の手持ち。既に受け取った給料も含む。</small></label>
+              <label><span>今月これから入る予定額</span><div class="money-input small"><span>¥</span><input name="expectedIncomeRemaining" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
+              <label><span>現在使える手持ち</span><div class="money-input small"><span>¥</span><input name="currentCash" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>MERPAY 支払予定</span><div class="money-input small"><span>¥</span><input name="merpayDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>PAIDY 支払予定</span><div class="money-input small"><span>¥</span><input name="paidyDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0" required></div></label>
               <label><span>その他の必須支払い</span><div class="money-input small"><span>¥</span><input name="otherDue" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
-              <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div><small class="field-help">来月の参考値。今月の計算には含めない。</small></label>
+              <label><span>来月の給料見込み <small>参考のみ</small></span><div class="money-input small"><span>¥</span><input name="nextSalary" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></label>
             </div>
             <div class="form-error" id="realityError" role="alert"></div>
             <button class="submit-button" type="submit">今月の収支を保存</button>
           </form>
         </section>
         <section class="fixed-commitments" aria-labelledby="fixedTitle">
-          <div class="fixed-heading"><div><span class="kicker">FIXED COMMITMENTS</span><h2 id="fixedTitle">事前に把握している固定支出。</h2></div><span id="fixedMonthLabel"></span></div>
-          <p class="fixed-policy">対象月は上の「今月の収支」で切り替える。固定分は自由予算ではない。未使用分の転用・翌月繰り越しはしない。買わずに終えても構わない。</p>
+          <div class="fixed-heading"><div class="heading-with-help"><h2 class="functional-title" id="fixedTitle">FIXED COMMITMENTS</h2><button type="button" class="help-button" data-help="fixed" aria-label="FIXED COMMITMENTSの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><span id="fixedMonthLabel"></span></div>
           <div class="fixed-totals" id="fixedTotals"></div>
           <div id="fixedList" class="fixed-list"></div>
           <form id="fixedForm">
@@ -183,7 +171,6 @@
               <label><span>分類</span><select class="text-input" id="fixedCategory" name="fixedCategory"><option value="service">固定サービス</option><option value="game-pass">固定月パス</option></select></label>
               <label><span>対象月</span><input class="text-input" id="fixedMonth" name="fixedMonth" type="month" min="2026-09" required></label>
             </div>
-            <p class="fixed-policy">登録を編集・削除しても実際の支出記録は残る。実績の訂正は「履歴」から。限定パック・石購入・追加課金は趣味・衝動買いとして記録する。</p>
             <div class="form-error" id="fixedError" role="alert"></div>
             <div class="edit-actions"><button class="submit-button" id="fixedSubmit" type="submit">固定項目を登録</button><button class="secondary-button" id="cancelFixedEdit" type="button" hidden>編集をやめる</button><button class="secondary-button danger-button" id="deleteFixed" type="button" hidden>この固定項目を削除</button></div>
           </form>
@@ -193,7 +180,6 @@
           <div class="balance-entry-copy">
             <span class="kicker">NEW SNAPSHOT</span>
             <h2>現在残高を更新</h2>
-            <p>支払い後、月初、気が向いた時。それで構わない。</p>
           </div>
           <form id="balanceForm">
             <label class="field-label" for="balanceDate">確認日</label>
@@ -213,9 +199,7 @@
       </section>
       <section class="view" id="goalFundView" aria-labelledby="goalFundTitle">
         <div class="section-heading">
-          <span class="kicker">GOAL FUND</span>
-          <h1 id="goalFundTitle">未来のために残せた金。</h1>
-          <p>封筒や別口座へ、実際に分けて確保した金だけを記録する。</p>
+          <div class="heading-with-help"><h1 class="functional-title" id="goalFundTitle">GOAL FUND</h1><button type="button" class="help-button" data-help="fund" aria-label="GOAL FUNDの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
         </div>
         <section class="fund-card" aria-labelledby="fundName">
           <div class="fund-heading"><div><span class="kicker">AI / PC</span><h2 id="fundName">AI・PC強化基金</h2></div><button type="button" class="row-edit" id="fundSettingsButton">目標額・保管場所</button></div>
@@ -230,7 +214,6 @@
           <p class="fund-policy">返済を優先する。余剰現金だけを未来へ残す。</p>
         </section>
         <details class="fund-history" id="fundHistory"><summary><span>FUND HISTORY · 積立・取り崩し履歴</span><small id="fundHistoryCount">0件</small></summary><div id="fundHistoryList"></div></details>
-        <p class="fund-footnote">将来のGPU、AI用PC、SSD、創作用機材などに向けて、今は現金のまま残す。購入・後払い・手持ち額の記録とは別に管理する。</p>
       </section>
     </main>
 
@@ -245,8 +228,7 @@
   <div class="modal" id="dayModal" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
     <div class="modal-card compact-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">DAILY LOG</span>
-      <h2 id="dayModalTitle">この日の記録。</h2>
+      <h2 class="functional-title" id="dayModalTitle">DAILY LOG</h2>
       <p id="dayModalDate"></p>
       <div id="dayPurchases"></div>
       <div class="modal-actions vertical">
@@ -261,40 +243,37 @@
   <div class="modal" id="purchaseModal" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle">
     <div class="modal-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">PURCHASE LOG</span>
-      <h2 id="purchaseTitle">いくら使った？</h2>
-      <p>責めるためではない。新しい支払いを正確に残す。</p>
+      <h2 class="functional-title" id="purchaseTitle">PURCHASE LOG</h2>
       <form id="purchaseForm">
         <label class="field-label" for="purchaseAmount">金額 <em>必須</em></label>
         <div class="money-input"><span>¥</span><input id="purchaseAmount" name="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="0" required></div>
         <label class="field-label" for="purchaseDate">購入日</label>
         <input class="text-input" id="purchaseDate" name="date" type="date" required>
         <fieldset>
-          <legend>これはどんな買い物？</legend>
-          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要な買い物</b><small>必要な食事・飲料、洗剤・衛生用品などの必需品</small></span></label>
-          <label class="radio-card"><input type="radio" name="purpose" value="caution"><span><b>注意支出</b><small>お菓子・間食・必須ではない百均用品や便利グッズ</small></span></label>
-          <label class="radio-card"><input type="radio" name="purpose" value="fixed"><span><b>事前登録済み固定支出</b><small>登録したサービス・月パスのみ。後払いは通常通り加算</small></span></label>
-          <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動買い</b><small>予定外の趣味支出・単発ゲーム課金。その日は購入日になる</small></span></label>
+          <legend>購入区分<button type="button" class="help-button" data-help="purchase-category" aria-label="購入区分の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></legend>
+          <label class="radio-card"><input type="radio" name="purpose" value="essential"><span><b>必要</b></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="caution"><span><b>注意支出</b></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="fixed"><span><b>固定</b></span></label>
+          <label class="radio-card"><input type="radio" name="purpose" value="impulse" checked><span><b>趣味・衝動</b></span></label>
         </fieldset>
         <div id="cautionPurchaseFields" class="caution-purchase-fields" hidden>
-          <label class="field-label" for="purchaseCautionCategory">注意支出の分類</label>
+          <div class="field-heading"><label class="field-label" for="purchaseCautionCategory">注意支出の分類</label><button type="button" class="help-button" data-help="caution" aria-label="注意支出の分類の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
           <select class="text-input" id="purchaseCautionCategory" name="cautionCategory" disabled>
             <option value="snack">お菓子・嗜好品</option>
             <option value="optional-daily-goods">任意の日用品</option>
             <option value="other">その他の注意支出</option>
           </select>
-          <p class="fixed-policy">お菓子・ジュース・間食は「お菓子・嗜好品」。必須ではない日用品・収納・予備は「任意の日用品」。それ以外は「その他の注意支出」。予定外の趣味物・追加課金は「趣味・衝動買い」で記録する。</p>
         </div>
         <div id="fixedPurchaseFields" class="fixed-purchase-fields" hidden>
-          <label class="field-label" for="purchaseFixedId">この月の事前登録項目</label>
+          <div class="field-heading"><label class="field-label" for="purchaseFixedId">この月の事前登録項目</label><button type="button" class="help-button" data-help="fixed" aria-label="固定支出の登録と記録の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
           <select class="text-input" id="purchaseFixedId" name="fixedCommitmentId" disabled><option value="">支払った登録項目を選ぶ</option></select>
           <p id="fixedPurchaseHelp" class="fixed-policy"></p>
         </div>
         <fieldset>
-          <legend>支払い方法</legend>
-          <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b><small>今月増えた後払いには加算しない</small></span></label>
-          <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>MERPAY後払い・分割</b><small>MERPAYの新規分へ加算する</small></span></label>
-          <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>PAIDY後払い・分割</b><small>PAIDYの新規分へ加算する</small></span></label>
+          <legend>支払い方法<button type="button" class="help-button" data-help="payment" aria-label="支払い方法の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></legend>
+          <label class="radio-card"><input type="radio" name="payment" value="cash" checked><span><b>今ある金から払った</b></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="merpay"><span><b>MERPAY後払い・分割</b></span></label>
+          <label class="radio-card"><input type="radio" name="payment" value="paidy"><span><b>PAIDY後払い・分割</b></span></label>
         </fieldset>
         <fieldset>
           <legend>買ったもの</legend>
@@ -303,7 +282,7 @@
             <label class="radio-card"><input type="radio" name="medium" value="digital"><span><b>デジタル・課金</b></span></label>
           </div>
         </fieldset>
-        <label class="field-label" for="purchaseName">商品名 <small>任意・ホームには表示しない</small></label>
+        <label class="field-label" for="purchaseName">商品名 <small>任意</small></label>
         <input class="text-input" id="purchaseName" name="name" maxlength="80" autocomplete="off" placeholder="空欄で構わない">
         <div class="form-error" id="purchaseError" role="alert"></div>
         <div class="edit-actions"><button class="submit-button" id="purchaseSubmit" type="submit">記録する</button><button class="secondary-button" id="deletePurchase" type="button" hidden>この記録を削除</button></div>
@@ -314,7 +293,7 @@
   <div class="modal" id="urgeModal" role="dialog" aria-modal="true" aria-labelledby="urgeTitle">
     <div class="modal-card brake-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">IMPULSE CHECK</span>
+      <div class="heading-with-help"><span class="modal-kicker">IMPULSE CHECK</span><button type="button" class="help-button" data-help="impulse" aria-label="IMPULSE CHECKの使い方" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
       <h2 id="urgeTitle">欲しいままでいい。一度、立ち止まれ。</h2>
       <div id="brakeTodaySpend"></div>
       <form id="brakeForm">
@@ -322,7 +301,6 @@
           <label>商品名 <small>任意</small><input class="text-input" id="brakeName" maxlength="80" placeholder="気になった物" autocomplete="off"></label>
           <label>金額 <small>任意</small><input class="text-input" id="brakeAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="円"></label>
         </div>
-        <p class="brake-hint">当てはまるものだけ選ぶ。複数選択できる。</p>
         <div id="brakeSignals"></div>
         <button class="submit-button" type="submit">今の状態を確認する</button>
       </form>
@@ -362,23 +340,21 @@
   <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal-card settings-card">
       <button class="modal-close" data-close aria-label="閉じる">×</button>
-      <span class="modal-kicker">SETTINGS / SYNC</span>
-      <h2 id="settingsTitle">端末を待たせない同期。</h2>
-      <p>記録は先にこの端末へ保存する。クラウド処理中でもアプリはすぐ使える。</p>
+      <div class="heading-with-help modal-heading"><h2 class="functional-title" id="settingsTitle">SETTINGS / SYNC</h2><button type="button" class="help-button" data-help="sync" aria-label="同期仕様の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
       <section class="theme-settings" aria-labelledby="themeTitle">
-        <h3 id="themeTitle">APPEARANCE / テーマ</h3>
+        <div class="heading-with-help"><h3 id="themeTitle">APPEARANCE / テーマ</h3><button type="button" class="help-button" data-help="theme" aria-label="テーマ設定の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
         <div class="theme-options" role="group" aria-label="配色テーマ">
           <button type="button" class="theme-option" data-theme-choice="light" aria-label="LIGHT · 明色" aria-pressed="true"><span class="theme-swatch light" aria-hidden="true"></span><span class="theme-name">LIGHT<small>明色</small></span></button>
           <button type="button" class="theme-option" data-theme-choice="dark" aria-label="DARK · 暗色" aria-pressed="false"><span class="theme-swatch dark" aria-hidden="true"></span><span class="theme-name">DARK<small>暗色</small></span></button>
         </div>
-        <p>この端末の表示だけを変更する。PCとスマホで別々に選べる。</p>
       </section>
       <div id="cloudPanelBody"></div>
       <div class="settings-actions">
         <button class="secondary-button" id="exportButton">JSONバックアップ</button>
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
+        <button type="button" class="help-button" data-help="backup" aria-label="バックアップと削除の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.14.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.14.1 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -409,8 +385,8 @@
   <div class="modal" id="fundTransactionModal" role="dialog" aria-modal="true" aria-labelledby="fundTransactionTitle">
     <div class="modal-card fund-modal">
       <button class="modal-close" data-close type="button" aria-label="閉じる">×</button>
-      <span class="modal-kicker">FUND ENTRY</span><h2 id="fundTransactionTitle">実際に残した金を記録する。</h2>
-      <p id="fundTransactionHelp" class="fund-entry-help"></p>
+      <div class="heading-with-help"><span class="modal-kicker">FUND ENTRY</span><button type="button" class="help-button" data-help="fund-entry" aria-label="積立・取り崩しの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><h2 id="fundTransactionTitle">積立を記録</h2>
+      <p id="fundTransactionHelp" hidden></p>
       <form id="fundTransactionForm">
         <label class="field-label" for="fundTransactionType">種別</label><select class="text-input" id="fundTransactionType" name="transactionType"><option value="deposit">積立</option><option value="withdrawal">取り崩し</option></select>
         <label class="field-label" for="fundAmount">金額</label><div class="money-input"><span>¥</span><input id="fundAmount" name="amount" type="number" min="1" step="1" inputmode="numeric" required></div>
@@ -432,25 +408,28 @@
       <button class="modal-close" data-close type="button" aria-label="閉じる">×</button>
       <span class="modal-kicker">FUND SETTINGS</span><h2 id="fundSettingsTitle">目標額・保管場所</h2>
       <form id="fundSettingsForm">
-        <label class="field-label" for="fundTargetAmount">目標額（任意）</label><div class="money-input small"><span>¥</span><input id="fundTargetAmount" name="targetAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="未設定でも使える"></div>
-        <p class="field-help">空欄で保存すると目標額を外す。現在積立と今月の成果はそのまま見られる。</p>
-        <label class="field-label" for="fundDefaultLocation">主な保管場所</label><select class="text-input" id="fundDefaultLocation" name="storageLocation"><option value="envelope">封筒</option><option value="account">別口座</option><option value="other">その他</option></select>
-        <p class="field-help">新しい記録の初期選択に使う。設定を変更しても、過去の保管場所や積立額は変わらない。</p>
+        <div class="field-heading"><label class="field-label" for="fundTargetAmount">目標額（任意）</label><button type="button" class="help-button" data-help="fund-target" aria-label="目標額の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><div class="money-input small"><span>¥</span><input id="fundTargetAmount" name="targetAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="未設定でも使える"></div>
+        <div class="field-heading"><label class="field-label" for="fundDefaultLocation">主な保管場所</label><button type="button" class="help-button" data-help="fund-storage" aria-label="保管場所の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><select class="text-input" id="fundDefaultLocation" name="storageLocation"><option value="envelope">封筒</option><option value="account">別口座</option><option value="other">その他</option></select>
         <div class="form-error" id="fundSettingsError" role="alert"></div><button class="submit-button" type="submit">設定を保存</button>
       </form>
     </div>
   </div>
+  <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpDialogTitle">
+    <div class="help-dialog-head"><h2 id="helpDialogTitle"></h2><button type="button" class="help-dismiss" id="helpDialogClose" aria-label="説明を閉じる" autofocus>×</button></div>
+    <div id="helpDialogBody"></div>
+  </dialog>
   <div class="toast" id="toast" role="status"></div>
   <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./app.js?v=0.14.0"></script>
-  <script defer src="./fund.js?v=0.14.0"></script>
-  <script defer src="./feedback.js?v=0.14.0"></script>
-  <script defer src="./brake.js?v=0.14.0"></script>
+  <script defer src="./app.js?v=0.14.1"></script>
+  <script defer src="./fund.js?v=0.14.1"></script>
+  <script defer src="./feedback.js?v=0.14.1"></script>
+  <script defer src="./brake.js?v=0.14.1"></script>
+  <script defer src="./help.js?v=0.14.1"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.14.0"></script>
+  <script defer src="./cloud-sync.js?v=0.14.1"></script>
 </body>
 </html>

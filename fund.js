@@ -29,12 +29,12 @@ function refresh(){
  if(config.targetAmount){const percent=s.currentAmount/config.targetAmount*100;$('fundTargetCopy').textContent=`目標 ${Z.money(config.targetAmount)} · 達成率 ${percent.toFixed(1)}%`;$('fundProgress').value=Math.min(100,Math.max(0,percent));$('fundProgress').setAttribute('aria-label',`目標額への達成率 ${percent.toFixed(1)}%`)}
  const items=records().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt||a.id.localeCompare(b.id));
  $('fundHistoryCount').textContent=`${items.length}件`;
- $('fundHistoryList').innerHTML=items.length?items.map(item=>`<article class="fund-history-row"><div><time>${esc(item.date.replaceAll('-','/'))}</time><b>${item.transactionType==='deposit'?'積立':'取り崩し'}</b><small>${item.transactionType==='deposit'?esc(SOURCES[item.source]||item.source)+' · ':''}保管：${LOCATIONS[item.storageLocation]}</small>${item.memo?`<p>${esc(item.memo)}</p>`:''}</div><strong class="${item.transactionType==='deposit'?'fund-plus':'fund-minus'}">${signed(item.transactionType==='deposit'?item.amount:-item.amount)}</strong><button type="button" class="row-edit" data-fund-edit="${esc(item.id)}">訂正</button></article>`).join(''):'<p class="fund-empty">まだ積立の記録はない。封筒や別口座へ実際に移した金を、ここに残せる。</p>';
+ $('fundHistoryList').innerHTML=items.length?items.map(item=>`<article class="fund-history-row"><div><time>${esc(item.date.replaceAll('-','/'))}</time><b>${item.transactionType==='deposit'?'積立':'取り崩し'}</b><small>${item.transactionType==='deposit'?esc(SOURCES[item.source]||item.source)+' · ':''}保管：${LOCATIONS[item.storageLocation]}</small>${item.memo?`<p>${esc(item.memo)}</p>`:''}</div><strong class="${item.transactionType==='deposit'?'fund-plus':'fund-minus'}">${signed(item.transactionType==='deposit'?item.amount:-item.amount)}</strong><button type="button" class="row-edit" data-fund-edit="${esc(item.id)}">訂正</button></article>`).join(''):'<p class="fund-empty">積立記録なし</p>';
 }
 function open(type='deposit',id=null){
  const old=id?records().find(item=>item.id===id):null;if(id&&!old)return;
  editor={id:old?.id||Z.uid('fundtx'),updatedAt:old?.updatedAt??null,transactionType:old?.transactionType||type};
- $('fundTransactionForm').reset();$('fundTransactionTitle').textContent=old?'積立履歴を訂正する。':type==='deposit'?'実際に残した金を記録する。':'取り崩した金を記録する。';
+ $('fundTransactionForm').reset();$('fundTransactionTitle').textContent=old?'積立履歴の訂正':type==='deposit'?'積立を記録':'取り崩しを記録';
  $('fundTransactionType').value=editor.transactionType;
  $('fundAmount').value=old?.amount||'';$('fundDate').value=old?.date||Z.dateKey();$('fundDate').max=Z.dateKey();
  $('fundSource').value=old&&Object.hasOwn(SOURCES,old.source)?old.source:'regular';
