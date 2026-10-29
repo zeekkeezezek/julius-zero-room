@@ -12,12 +12,13 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.14.1">
-  <link rel="stylesheet" href="./theme.css?v=0.14.1">
-  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.14.1">
-  <link rel="stylesheet" href="./feedback.css?v=0.14.1">
-  <link rel="stylesheet" href="./help.css?v=0.14.1">
-  <script src="./theme.js?v=0.14.1"></script>
+  <link rel="stylesheet" href="./styles.css?v=0.15.0">
+  <link rel="stylesheet" href="./theme.css?v=0.15.0">
+  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.15.0">
+  <link rel="stylesheet" href="./feedback.css?v=0.15.0">
+  <link rel="stylesheet" href="./help.css?v=0.15.0">
+  <link rel="stylesheet" href="./subscriptions.css?v=0.15.0">
+  <script src="./theme.js?v=0.15.0"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -159,6 +160,7 @@
             <button class="submit-button" type="submit">今月の収支を保存</button>
           </form>
         </section>
+        <section class="subscription-recovery" id="subscriptionRecovery" aria-label="サブスク予定の参照"></section>
         <section class="fixed-commitments" aria-labelledby="fixedTitle">
           <div class="fixed-heading"><div class="heading-with-help"><h2 class="functional-title" id="fixedTitle">FIXED COMMITMENTS</h2><button type="button" class="help-button" data-help="fixed" aria-label="FIXED COMMITMENTSの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><span id="fixedMonthLabel"></span></div>
           <div class="fixed-totals" id="fixedTotals"></div>
@@ -166,7 +168,7 @@
           <form id="fixedForm">
             <h3>登録・訂正</h3>
             <div class="fixed-input-grid">
-              <label class="fixed-name-field"><span>名称</span><input class="text-input" id="fixedName" name="fixedName" maxlength="80" required autocomplete="off" placeholder="事前に予定していたサービス・月パス"></label>
+              <label class="fixed-name-field"><span>名称</span><input class="text-input" id="fixedName" name="fixedName" maxlength="80" required autocomplete="off" placeholder="毎回自分で購入するサービス・月パス"></label>
               <label><span>登録額</span><div class="money-input small"><span>¥</span><input id="fixedAmount" name="fixedAmount" type="number" min="1" step="1" inputmode="numeric" required></div></label>
               <label><span>分類</span><select class="text-input" id="fixedCategory" name="fixedCategory"><option value="service">固定サービス</option><option value="game-pass">固定月パス</option></select></label>
               <label><span>対象月</span><input class="text-input" id="fixedMonth" name="fixedMonth" type="month" min="2026-09" required></label>
@@ -215,13 +217,25 @@
         </section>
         <details class="fund-history" id="fundHistory"><summary><span>FUND HISTORY · 積立・取り崩し履歴</span><small id="fundHistoryCount">0件</small></summary><div id="fundHistoryList"></div></details>
       </section>
+      <section class="view" id="subscriptionsView" aria-labelledby="subscriptionsTitle">
+        <div class="section-heading subscription-heading"><div class="heading-with-help"><h1 class="functional-title" id="subscriptionsTitle">SUBSCRIPTIONS</h1><button type="button" class="help-button" data-help="subscriptions" aria-label="SUBSCRIPTIONSの説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div><button type="button" class="secondary-button" id="subscriptionAdd">＋ サブスクを追加</button></div>
+        <section class="subscription-summary" aria-label="契約集計">
+          <div><span>MONTHLY TOTAL <small>月額換算</small></span><strong id="subscriptionMonthly">¥0</strong></div>
+          <div><span>ACTIVE</span><strong id="subscriptionActive">0</strong></div>
+          <div><span>YEARLY EST.</span><strong id="subscriptionYearly">¥0</strong></div>
+          <div class="subscription-next"><span>NEXT PAYMENT</span><strong id="subscriptionNext">—</strong><b id="subscriptionNextName">予定なし</b><b id="subscriptionNextAmount">—</b></div>
+        </section>
+        <div class="subscription-breakdown" id="subscriptionBreakdown"></div>
+        <div class="subscription-list" id="subscriptionList"></div>
+      </section>
     </main>
 
     <nav class="bottom-nav" aria-label="メインメニュー">
-      <button class="active" data-view="home"><span>01</span>HOME</button>
-      <button data-view="history"><span>02</span>HISTORY</button>
-      <button data-view="recovery"><span>03</span>RECOVERY</button>
-      <button data-view="goalFund"><span>04</span>GOAL FUND</button>
+      <button class="active" data-view="home"><span>01</span><b>HOME</b></button>
+      <button data-view="history"><span>02</span><b>HISTORY</b></button>
+      <button data-view="recovery"><span>03</span><b>RECOVERY</b></button>
+      <button data-view="goalFund"><span>04</span><b>GOAL FUND</b></button>
+      <button data-view="subscriptions" aria-label="05 SUBSCRIPTIONS"><span>05</span><b>SUBSCRIP<wbr>TIONS</b></button>
     </nav>
   </div>
 
@@ -265,7 +279,7 @@
           </select>
         </div>
         <div id="fixedPurchaseFields" class="fixed-purchase-fields" hidden>
-          <div class="field-heading"><label class="field-label" for="purchaseFixedId">この月の事前登録項目</label><button type="button" class="help-button" data-help="fixed" aria-label="固定支出の登録と記録の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
+          <div class="field-heading"><label class="field-label" for="purchaseFixedId">固定支出・サブスク</label><button type="button" class="help-button" data-help="fixed" aria-label="固定支出の登録と記録の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
           <select class="text-input" id="purchaseFixedId" name="fixedCommitmentId" disabled><option value="">支払った登録項目を選ぶ</option></select>
           <p id="fixedPurchaseHelp" class="fixed-policy"></p>
         </div>
@@ -354,7 +368,7 @@
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
         <button type="button" class="help-button" data-help="backup" aria-label="バックアップと削除の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.14.1 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.15.0 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -414,6 +428,24 @@
       </form>
     </div>
   </div>
+  <div class="modal" id="subscriptionModal" role="dialog" aria-modal="true" aria-labelledby="subscriptionEditorTitle">
+    <div class="modal-card">
+      <button type="button" class="modal-close" data-close aria-label="閉じる">×</button>
+      <div class="heading-with-help modal-heading"><h2 class="functional-title" id="subscriptionEditorTitle">サブスクを追加</h2><button type="button" class="help-button" data-help="subscriptions" aria-label="サブスク登録・移動の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button></div>
+      <form id="subscriptionForm">
+        <label class="field-label" for="subscriptionName">サービス名</label><input class="text-input" id="subscriptionName" name="name" maxlength="80" required autocomplete="off">
+        <label class="field-label" for="subscriptionAmount">金額</label><div class="money-input small"><span>¥</span><input id="subscriptionAmount" name="amount" type="number" min="1" step="1" inputmode="numeric" required></div>
+        <label class="field-label" for="subscriptionCycle">更新周期</label><select class="text-input" id="subscriptionCycle" name="cycle"><option value="monthly">毎月</option><option value="yearly">毎年</option><option value="other">その他（日数指定）</option></select>
+        <div id="subscriptionDayField"><label class="field-label" for="subscriptionRenewalDay">更新日（毎月何日）</label><input class="text-input" id="subscriptionRenewalDay" name="renewalDay" type="number" min="1" max="31" step="1" inputmode="numeric" required></div>
+        <div id="subscriptionDateField" hidden><label class="field-label" for="subscriptionRenewalDate">更新日</label><input class="text-input" id="subscriptionRenewalDate" name="renewalDate" type="date" min="1900-01-01" max="9999-12-31" disabled></div>
+        <div id="subscriptionIntervalField" hidden><label class="field-label" for="subscriptionIntervalDays">更新間隔（日）</label><input class="text-input" id="subscriptionIntervalDays" name="intervalDays" type="number" min="1" max="3660" step="1" inputmode="numeric" value="30" disabled></div>
+        <label class="field-label" for="subscriptionPayment">支払い方法</label><select class="text-input" id="subscriptionPayment" name="payment"><option value="cash">今ある金から払った</option><option value="merpay">MERPAY後払い・分割</option><option value="paidy">PAIDY後払い・分割</option></select>
+        <label class="field-label" for="subscriptionStatus">ステータス</label><select class="text-input" id="subscriptionStatus" name="status"><option value="active">ACTIVE</option><option value="paused">PAUSED</option><option value="cancelled">CANCELLED</option></select>
+        <label class="field-label" for="subscriptionMemo">メモ（任意）</label><textarea class="text-input" id="subscriptionMemo" name="memo" maxlength="500" rows="3"></textarea>
+        <div class="form-error" id="subscriptionError" role="alert"></div><button class="submit-button" id="subscriptionSubmit" type="submit">登録する</button>
+      </form>
+    </div>
+  </div>
   <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpDialogTitle">
     <div class="help-dialog-head"><h2 id="helpDialogTitle"></h2><button type="button" class="help-dismiss" id="helpDialogClose" aria-label="説明を閉じる" autofocus>×</button></div>
     <div id="helpDialogBody"></div>
@@ -421,15 +453,17 @@
   <div class="toast" id="toast" role="status"></div>
   <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./app.js?v=0.14.1"></script>
-  <script defer src="./fund.js?v=0.14.1"></script>
-  <script defer src="./feedback.js?v=0.14.1"></script>
-  <script defer src="./brake.js?v=0.14.1"></script>
-  <script defer src="./help.js?v=0.14.1"></script>
+  <script defer src="./subscription-model.js?v=0.15.0"></script>
+  <script defer src="./app.js?v=0.15.0"></script>
+  <script defer src="./fund.js?v=0.15.0"></script>
+  <script defer src="./subscriptions.js?v=0.15.0"></script>
+  <script defer src="./feedback.js?v=0.15.0"></script>
+  <script defer src="./brake.js?v=0.15.0"></script>
+  <script defer src="./help.js?v=0.15.0"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.14.1"></script>
+  <script defer src="./cloud-sync.js?v=0.15.0"></script>
 </body>
 </html>

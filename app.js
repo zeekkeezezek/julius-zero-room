@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.14.1';
+const APP_VERSION='0.15.0';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -25,9 +25,11 @@ const historyMonthState=new Map(),historyYearState=new Map();
 localStorage.removeItem('julius_zero_room_demo_v02');
 localStorage.removeItem('julius_zero_room_demo_mode');
 
-function emptyData(){return{version:7,days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:0}}
+function emptyData(){return{version:7,subscriptionsVersion:0,subscriptions:[],days:{},fixedCommitments:[],purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:0}}
 function normalize(input){
   const base=emptyData(),value=input&&typeof input==='object'?input:{};
+  base.subscriptions=window.ZeroSubscriptionModel.normalize(value.subscriptions);
+  base.subscriptionsVersion=value.subscriptionsVersion===1||(!Object.hasOwn(value,'subscriptionsVersion')&&Array.isArray(value.subscriptions))?1:0;
   if(value.monthlyReality&&Object.keys(value.monthlyReality).length&&(whole(value.version)<5||Object.values(value.monthlyReality).some(item=>item&&item.expectedIncomeVerified!==true)))pendingRealityMigration=true;
   base.days=value.days&&typeof value.days==='object'?Object.fromEntries(Object.entries(value.days).filter(([,item])=>item&&['no-buy','purchase'].includes(item.status)).map(([key,item])=>{const createdAt=Number(item.createdAt)||Number(item.confirmedAt)||1;return[key,{...item,id:item.id||key,createdAt,updatedAt:Number(item.updatedAt)||createdAt}]})):{};
   base.purchases=Array.isArray(value.purchases)?value.purchases.filter(p=>p&&p.id&&p.date&&Number(p.amount)>0).map(p=>{const createdAt=Number(p.createdAt)||1;const payment=['cash','merpay','paidy','legacy'].includes(p.payment)?p.payment:p.payment==='afterpay'?'legacy':'cash';return{...p,amount:Math.round(Number(p.amount)),payment,purpose:p.purpose==='caution'?'caution':p.purpose==='essential'?'essential':p.purpose==='fixed'&&p.fixedCommitmentId&&['service','game-pass'].includes(p.fixedCategory)?'fixed':'impulse',medium:p.medium==='digital'?'digital':'physical',...(p.purpose==='caution'?{cautionCategory:Object.hasOwn(CAUTION_CATEGORIES,p.cautionCategory)?p.cautionCategory:'other'}:{}),name:String(p.name||''),createdAt,updatedAt:Number(p.updatedAt)||createdAt}}):[];
@@ -91,7 +93,7 @@ function monthRecords(key){
 }
 function summaryText(payload=data){
   const value=normalize(payload),months=new Set([...Object.keys(value.days).map(d=>d.slice(0,7)),...value.purchases.map(p=>p.date.slice(0,7)),...Object.keys(value.monthlyReality),...value.fixedCommitments.map(item=>item.month)]);
-  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.filter(isStoppedUrge).length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目 / 積立履歴 ${value.goalFundTransactions.length}件`;
+  return`記録月 ${months.size} / 購入 ${value.purchases.length}件 / 我慢 ${value.stoppedUrges.filter(isStoppedUrge).length}回 / 残高 ${value.recoverySnapshots.length}回 / 固定 ${value.fixedCommitments.length}項目 / サブスク ${value.subscriptions.length}件 / 積立履歴 ${value.goalFundTransactions.length}件`;
 }
 
 function reconcileDay(key){
@@ -99,7 +101,7 @@ function reconcileDay(key){
   if(impulses.length){data.days[key]={id:key,status:'purchase',createdAt:old?.createdAt||Math.min(...impulses.map(p=>p.createdAt||now)),confirmedAt:now,updatedAt:now}}
   else if(old?.status==='purchase')delete data.days[key];
 }
-function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroFund?.refresh();window.ZeroFeedback?.refresh(monthKey(calendarCursor));window.ZeroBrake?.refresh();if(document.getElementById('dayModal').classList.contains('show'))renderDayPurchases()}
+function renderAll(){renderTodayStatus();renderCalendar();renderMetrics();renderHistory();renderRecovery();refreshFixedPicker();if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel();window.ZeroFund?.refresh();window.ZeroFeedback?.refresh(monthKey(calendarCursor));window.ZeroBrake?.refresh();window.ZeroSubscriptions?.refresh();if(document.getElementById('dayModal').classList.contains('show'))renderDayPurchases()}
 function renderTodayStatus(){
   const todayKey=dateKey(),todayPurchases=data.purchases.filter(item=>item.date===todayKey),impulse=todayPurchases.some(item=>item.purpose==='impulse'),todayAfterpay=todayPurchases.filter(item=>isAfterpay(item.payment)).reduce((sum,item)=>sum+item.amount,0),holds=activeHolds().length;
   const box=document.getElementById('todayStatus');box.classList.toggle('purchase-today',impulse);
@@ -171,10 +173,11 @@ function renderRecovery(){
 }
 function fixedCategoryLabel(category){return category==='game-pass'?'固定月パス':'固定サービス'}
 function purchasePurposeLabel(item){return item.purpose==='caution'?`注意支出 · ${CAUTION_CATEGORIES[item.cautionCategory]||CAUTION_CATEGORIES.other}`:item.purpose==='fixed'?fixedCategoryLabel(item.fixedCategory):item.purpose==='essential'?'必要':'趣味・衝動'}
-function fixedMonthItems(month){return data.fixedCommitments.filter(item=>item.month===month).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))}
+function isMigratedFixed(id){return data.subscriptions.some(item=>item.sourceFixedIds.includes(id))}
+function fixedMonthItems(month){return data.fixedCommitments.filter(item=>item.month===month&&!isMigratedFixed(item.id)).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))}
 function fixedItemPurchases(item){return data.purchases.filter(p=>p.purpose==='fixed'&&p.fixedCommitmentId===item.id&&p.date.slice(0,7)===item.month)}
 function fixedTotals(month){
-  const items=fixedMonthItems(month),purchases=data.purchases.filter(p=>p.purpose==='fixed'&&p.date.slice(0,7)===month),service=items.filter(i=>i.category==='service').reduce((sum,i)=>sum+i.amount,0),gamePass=items.filter(i=>i.category==='game-pass').reduce((sum,i)=>sum+i.amount,0);
+  const items=fixedMonthItems(month),purchases=data.purchases.filter(p=>p.purpose==='fixed'&&!p.subscriptionId&&!String(p.fixedCommitmentId||'').startsWith('subscription:')&&!isMigratedFixed(p.fixedCommitmentId)&&p.date.slice(0,7)===month),service=items.filter(i=>i.category==='service').reduce((sum,i)=>sum+i.amount,0),gamePass=items.filter(i=>i.category==='game-pass').reduce((sum,i)=>sum+i.amount,0);
   return{registered:service+gamePass,service,gamePass,recorded:purchases.reduce((sum,p)=>sum+p.amount,0)};
 }
 function renderFixedCommitments(){
@@ -182,7 +185,7 @@ function renderFixedCommitments(){
   document.getElementById('fixedMonthLabel').textContent=key.replace('-',' / ');
   document.getElementById('plannedFixedSummary').innerHTML=`<span>登録済みの固定支出</span><strong>${money(totals.registered)}</strong><small>固定サービス ${money(totals.service)} · 固定月パス ${money(totals.gamePass)}</small>`;
   document.getElementById('fixedTotals').innerHTML=`<div><span>登録額</span><strong>${money(totals.registered)}</strong></div><div><span>記録済み</span><strong>${money(totals.recorded)}</strong></div>`;
-  document.getElementById('fixedList').innerHTML=items.length?items.map(item=>{const records=fixedItemPurchases(item),actual=records.reduce((sum,p)=>sum+p.amount,0);return`<div class="fixed-row"><div><b>${escapeHtml(item.name)}</b><small>${fixedCategoryLabel(item.category)}</small><small>${records.length?'記録済み':'未記録'}${records.length?` · 実績 ${money(actual)}`:''}${records.length>1?' · 複数記録あり（履歴で確認）':''}</small></div><strong>${money(item.amount)}</strong><button class="row-edit" type="button" data-edit-fixed="${escapeHtml(item.id)}">編集</button></div>`}).join(''):'<p class="fixed-empty">この月の事前登録項目はない。</p>';
+  document.getElementById('fixedList').innerHTML=items.length?items.map(item=>{const records=fixedItemPurchases(item),actual=records.reduce((sum,p)=>sum+p.amount,0);return`<div class="fixed-row"><div><b>${escapeHtml(item.name)}</b><small>${fixedCategoryLabel(item.category)}</small><small>${records.length?'記録済み':'未記録'}${records.length?` · 実績 ${money(actual)}`:''}${records.length>1?' · 複数記録あり（履歴で確認）':''}</small></div><strong>${money(item.amount)}</strong><div class="fixed-row-actions">${item.category==='service'?`<button class="row-edit" type="button" data-migrate-fixed="${escapeHtml(item.id)}">SUBSCRIPTIONSへ移動</button>`:''}<button class="row-edit" type="button" data-edit-fixed="${escapeHtml(item.id)}">編集</button></div></div>`}).join(''):'<p class="fixed-empty">この月の事前登録項目はない。</p>';
   if(!editingFixedId&&!document.getElementById('fixedMonth').value)document.getElementById('fixedMonth').value=key;
 }
 function resetFixedForm(){editingFixedId=null;document.getElementById('fixedForm').reset();document.getElementById('fixedMonth').value=realityMonthValue();document.getElementById('fixedSubmit').textContent='固定項目を登録';document.getElementById('cancelFixedEdit').hidden=true;document.getElementById('deleteFixed').hidden=true;document.getElementById('fixedError').textContent=''}
@@ -217,7 +220,7 @@ function refreshFixedPicker(){
   const form=document.getElementById('purchaseForm'),isFixed=form.elements.purpose.value==='fixed',select=document.getElementById('purchaseFixedId'),oldSelection=select.value,key=(document.getElementById('purchaseDate').value||dateKey()).slice(0,7),editing=data.purchases.find(p=>p.id===editingPurchaseId);
   document.getElementById('fixedPurchaseFields').hidden=!isFixed;select.required=isFixed;select.disabled=!isFixed;
   if(!isFixed)return;
-  const items=fixedMonthItems(key),options=items.map(item=>{const used=fixedItemPurchases(item).some(p=>p.id!==editingPurchaseId);return`<option value="${escapeHtml(item.id)}"${used?' disabled':''}>${escapeHtml(item.name)} · ${money(item.amount)}${used?' · 記録済み':''}</option>`});
+  const items=[...fixedMonthItems(key),...(window.ZeroSubscriptions?.purchaseOptions()||[])],options=items.map(item=>{const used=!item.subscriptionId&&fixedItemPurchases(item).some(p=>p.id!==editingPurchaseId);return`<option value="${escapeHtml(item.id)}"${used?' disabled':''}>${escapeHtml(item.name)} · ${money(item.amount)}${item.subscriptionId?' · SUBSCRIPTION':''}${used?' · 記録済み':''}</option>`});
   const orphan=editing?.purpose==='fixed'&&editing.date.slice(0,7)===key&&!items.some(i=>i.id===editing.fixedCommitmentId);
   if(orphan)options.push(`<option value="${escapeHtml(editing.fixedCommitmentId)}">${escapeHtml(editing.fixedName||editing.name)} · 元の登録は削除／対象月変更済み</option>`);
   select.innerHTML='<option value="">支払った登録項目を選ぶ</option>'+options.join('');
@@ -225,9 +228,11 @@ function refreshFixedPicker(){
   document.getElementById('fixedPurchaseHelp').textContent=items.length?'':'この月の事前登録項目なし';
 }
 function selectFixedPurchase(){
-  const item=data.fixedCommitments.find(i=>i.id===document.getElementById('purchaseFixedId').value);if(!item)return;
+  const id=document.getElementById('purchaseFixedId').value,subscription=window.ZeroSubscriptions?.fromFixedId(id),item=subscription||data.fixedCommitments.find(i=>i.id===id);if(!item)return;
+  if(subscription)document.querySelector(`input[name="payment"][value="${subscription.payment}"]`).checked=true;
   document.getElementById('purchaseAmount').value=item.amount;document.getElementById('purchaseName').value=item.name;document.querySelector('input[name="medium"][value="digital"]').checked=true;
 }
+function purchaseDateChanged(){const select=document.getElementById('purchaseFixedId');if(!window.ZeroSubscriptions?.fromFixedId(select.value))select.value='';refreshFixedPicker()}
 function realityMonthValue(){return document.getElementById('realityMonth').value||monthKey(today())}
 function realityNumbers(item){const value=item||{},cash=whole(value.currentCash),expected=whole(value.expectedIncomeRemaining),available=cash+expected,required=whole(value.merpayDue)+whole(value.paidyDue)+whole(value.otherDue),difference=available-required,shortage=Math.min(0,difference),covered=Math.max(0,difference);return{cash,expected,available,required,difference,shortage,covered}}
 function renderReality(){
@@ -289,18 +294,18 @@ function savePurchase(event){
   if(!Number.isSafeInteger(amount)||amount<1){document.getElementById('purchaseError').textContent='金額を1円以上で入力してくれ。';return}if(!date||date<START_DATE||date>dateKey()){document.getElementById('purchaseError').textContent='記録できる日付を確認してくれ。';return}if(!['cash','merpay','paidy'].includes(payment)){document.getElementById('purchaseError').textContent='支払い方法を選んでくれ。';return}
   const cautionCategory=String(form.get('cautionCategory')||'');
   if(purpose==='caution'&&!Object.hasOwn(CAUTION_CATEGORIES,cautionCategory)){document.getElementById('purchaseError').textContent='注意支出の分類を選んでくれ。';return}
-  const fixedId=String(form.get('fixedCommitmentId')||''),oldFixed=data.purchases.find(p=>p.id===editingPurchaseId),fixed=data.fixedCommitments.find(i=>i.id===fixedId&&i.month===date.slice(0,7));
+  const fixedId=String(form.get('fixedCommitmentId')||''),oldFixed=data.purchases.find(p=>p.id===editingPurchaseId),subscription=window.ZeroSubscriptions?.fromFixedId(fixedId),fixed=subscription?{category:'service',name:subscription.name}:data.fixedCommitments.find(i=>i.id===fixedId&&i.month===date.slice(0,7));
   const retained=oldFixed?.purpose==='fixed'&&fixedId===oldFixed.fixedCommitmentId&&date.slice(0,7)===oldFixed.date.slice(0,7);
   if(purpose==='fixed'&&(!fixed&&!retained)){document.getElementById('purchaseError').textContent='購入月の事前登録済み固定項目を選んでくれ。未登録の単発購入は趣味・衝動買いだ。';return}
-  if(purpose==='fixed'&&data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7))){document.getElementById('purchaseError').textContent='この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
+  if(purpose==='fixed'&&(subscription?window.ZeroSubscriptions.paymentOn(subscription,date,editingPurchaseId):data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7)))){document.getElementById('purchaseError').textContent='この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
   if(editingPurchaseId&&!oldFixed){document.getElementById('purchaseError').textContent='この記録は別端末で削除された。履歴を確認してくれ。';return}
   if(purchaseHoldContext){
     const hold=data.stoppedUrges.find(item=>item.id===purchaseHoldContext.id);
     if(!hold||hold.updatedAt!==purchaseHoldContext.updatedAt){document.getElementById('purchaseError').textContent='HOLDが別の操作で変更された。HOLDを開き直してくれ。';return}
     if(!purchaseHoldContext.purchaseId&&data.purchases.some(item=>item.id==='purchase_hold_'+hold.id)){document.getElementById('purchaseError').textContent='このHOLDの購入は記録済みだ。HOLDから開き直して訂正してくれ。';return}
   }
-  const fixedFields=purpose==='fixed'?{fixedCommitmentId:fixedId,fixedCategory:retained?oldFixed.fixedCategory:fixed.category,fixedName:retained?oldFixed.fixedName||oldFixed.name:fixed.name}:{};
-  const now=Date.now(),old=data.purchases.find(p=>p.id===editingPurchaseId),oldDate=old?.date,entry={id:old?.id||(purchaseHoldContext?'purchase_hold_'+purchaseHoldContext.id:uid('purchase')),date,amount,payment,purpose:['essential','fixed','caution'].includes(purpose)?purpose:'impulse',...(purpose==='caution'?{cautionCategory}:{}),...fixedFields,medium:medium==='digital'?'digital':'physical',name,createdAt:old?.createdAt||now,updatedAt:now};
+  const fixedFields=purpose==='fixed'?{fixedCommitmentId:fixedId,fixedCategory:retained?oldFixed.fixedCategory:fixed.category,fixedName:retained?oldFixed.fixedName||oldFixed.name:fixed.name,...(subscription?{subscriptionId:subscription.id}:retained&&oldFixed.subscriptionId?{subscriptionId:oldFixed.subscriptionId}:{})}:{};
+  const now=Date.now(),old=data.purchases.find(p=>p.id===editingPurchaseId),oldDate=old?.date,entry={id:old?.id||(purchaseHoldContext?'purchase_hold_'+purchaseHoldContext.id:purpose==='fixed'&&subscription?window.ZeroSubscriptions.nextPurchaseId(subscription.id,date):uid('purchase')),date,amount,payment,purpose:['essential','fixed','caution'].includes(purpose)?purpose:'impulse',...(purpose==='caution'?{cautionCategory}:{}),...fixedFields,medium:medium==='digital'?'digital':'physical',name,createdAt:old?.createdAt||now,updatedAt:now};
   if(old)data.purchases=data.purchases.map(p=>p.id===old.id?entry:p);else data.purchases.push(entry);
   if(purchaseHoldContext)window.ZeroBrake.attachPurchase(purchaseHoldContext.id,entry.id);
   if(oldDate)reconcileDay(oldDate);reconcileDay(date);hideModal('purchaseModal');
@@ -318,7 +323,7 @@ function varied(list){return list[(data.stoppedUrges.filter(isStoppedUrge).lengt
 function openUrge(){window.ZeroBrake.open('quiz')}
 function emergencyStop(){window.ZeroBrake.open('emergency')}
 
-function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}if(view==='goalFund')window.ZeroFund?.refresh()}
+function setView(view){document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`${view}View`));document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='history')renderHistory();if(view==='recovery'){renderRecovery();loadRealityForm()}if(view==='goalFund')window.ZeroFund?.refresh();if(view==='subscriptions')window.ZeroSubscriptions?.refresh()}
 function toast(message){const box=document.getElementById('toast');clearTimeout(toastTimer);box.textContent=message;box.classList.add('show');toastTimer=setTimeout(()=>box.classList.remove('show'),3200)}
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function backup(){const payload={...data,app:'JULIUS ZERO ROOM',appVersion:APP_VERSION,exportedAt:new Date().toISOString()},blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`julius_zero_room_${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -331,9 +336,9 @@ function bindEvents(){
   document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>hideModal(button)));document.querySelectorAll('.modal:not(.locked-modal)').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)hideModal(modal.id)}));document.addEventListener('keydown',event=>{if(event.key==='Escape'){const modal=document.querySelector('.modal.show:not(.locked-modal)');if(modal)hideModal(modal.id)}});
   document.getElementById('prevMonth').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar();renderMetrics()});document.getElementById('nextMonth').addEventListener('click',()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar();renderMetrics()});document.getElementById('purchaseButton').addEventListener('click',()=>openPurchase());document.getElementById('confirmPurchase').addEventListener('click',()=>openPurchase(selectedDay));document.getElementById('confirmNoBuy').addEventListener('click',confirmNoBuy);document.getElementById('clearDayStatus').addEventListener('click',clearDayStatus);document.getElementById('purchaseForm').addEventListener('submit',savePurchase);document.getElementById('deletePurchase').addEventListener('click',deletePurchase);document.getElementById('urgeButton').addEventListener('click',openUrge);document.getElementById('stopButton').addEventListener('click',emergencyStop);
   document.getElementById('balanceForm').addEventListener('submit',saveBalance);document.getElementById('cancelBalanceEdit').addEventListener('click',resetBalanceForm);document.getElementById('deleteSnapshot').addEventListener('click',()=>editingSnapshotId&&deleteSnapshot(editingSnapshotId));document.getElementById('realityForm').addEventListener('submit',saveReality);document.getElementById('realityMonth').addEventListener('change',()=>{resetFixedForm();loadRealityForm()});
-  document.getElementById('fixedForm').addEventListener('submit',saveFixed);document.getElementById('fixedList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-fixed]');if(button)editFixed(button.dataset.editFixed)});
+  document.getElementById('fixedForm').addEventListener('submit',saveFixed);document.getElementById('fixedList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-fixed]');if(button)editFixed(button.dataset.editFixed);const move=event.target.closest('[data-migrate-fixed]');if(move)window.ZeroSubscriptions?.openMigration(move.dataset.migrateFixed)});
   document.getElementById('cancelFixedEdit').addEventListener('click',resetFixedForm);document.getElementById('deleteFixed').addEventListener('click',deleteFixed);document.getElementById('confirmFixedEntry').addEventListener('click',confirmFixedEntry);
-  document.querySelectorAll('input[name="purpose"],input[name="payment"]').forEach(input=>input.addEventListener('change',()=>{refreshPurchaseFields()}));document.getElementById('purchaseDate').addEventListener('change',()=>{document.getElementById('purchaseFixedId').value='';refreshFixedPicker()});document.getElementById('purchaseFixedId').addEventListener('change',selectFixedPurchase);
+  document.querySelectorAll('input[name="purpose"],input[name="payment"]').forEach(input=>input.addEventListener('change',()=>{refreshPurchaseFields()}));document.getElementById('purchaseDate').addEventListener('change',purchaseDateChanged);document.getElementById('purchaseFixedId').addEventListener('change',selectFixedPurchase);
   document.getElementById('dayPurchases').addEventListener('click',event=>{const button=event.target.closest('[data-day-purchase]');if(button)openPurchase(selectedDay,button.dataset.dayPurchase)});
   document.getElementById('historyList').addEventListener('click',event=>{const button=event.target.closest('[data-edit-purchase]');if(button)openPurchase(dateKey(),button.dataset.editPurchase)});document.getElementById('recoveryHistory').addEventListener('click',event=>{const button=event.target.closest('[data-edit-snapshot]');if(button)editSnapshot(button.dataset.editSnapshot)});
   document.getElementById('settingsButton').addEventListener('click',()=>{showModal('settingsModal');if(typeof window.cloudSyncRefreshPanel==='function')window.cloudSyncRefreshPanel()});document.getElementById('exportButton').addEventListener('click',backup);document.getElementById('importInput').addEventListener('change',event=>importBackup(event.target.files?.[0]));
@@ -342,6 +347,6 @@ function bindEvents(){
 function offerRealityMigration(){if(pendingRealityMigration&&!realityMigrationOffered&&localStorage.getItem(REALITY_MIGRATION_KEY)!=='1'){realityMigrationOffered=true;setTimeout(()=>showModal('realityMigrationModal'),250)}}
 function registerServiceWorker(){if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}))}
 
-window.ZeroRoom={APP_VERSION,STORAGE_KEY,monthRecords,daySpend,spendLevel,balanceModel,isStoppedUrge,showModal,hideModal,setJulius,openPurchase,openPurchaseFromHold,setView,money,escapeHtml,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
+window.ZeroRoom={APP_VERSION,STORAGE_KEY,monthRecords,daySpend,spendLevel,balanceModel,isStoppedUrge,showModal,hideModal,setJulius,openPurchase,openPurchaseFromHold,setView,money,escapeHtml,refreshPurchaseFields,selectFixedPurchase,getData:()=>data,replaceData:applyCloudData,save,renderAll,summaryText,normalize,realityNumbers,activeHolds,dateKey:()=>dateKey(today()),uid,toast,backup,setSyncState};
 bindEvents();renderAll();loadRealityForm();offerRealityMigration();registerServiceWorker();
 })();

@@ -1,0 +1,23 @@
+/* Reuse the existing palette, controls and compact numeric hierarchy. */
+.bottom-nav{width:min(720px,calc(100% - 20px));grid-template-columns:repeat(5,minmax(0,1fr));height:68px}
+.bottom-nav button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;letter-spacing:.02em;font-size:10px;line-height:1.2;padding:3px}
+.bottom-nav button span{display:block;margin:0;font-size:8px}.bottom-nav button b{font:inherit;max-width:100%}
+.subscription-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.subscription-heading>.secondary-button{width:auto;margin:0;padding:11px 16px}
+.subscription-summary{display:grid;grid-template-columns:1.3fr .65fr 1.1fr 1.5fr;border:1px solid var(--line);border-radius:17px;background:var(--panel);overflow:hidden}
+.subscription-summary>div{padding:20px;border-right:1px solid var(--line);min-width:0}.subscription-summary>div:last-child{border:0}
+.subscription-summary span,.subscription-recovery span{display:block;font:700 10px/1.6 var(--mono);color:var(--muted);letter-spacing:.04em}
+.subscription-summary span small{font:inherit}.subscription-summary strong{display:block;font:700 clamp(24px,3vw,32px)/1.35 var(--mono);margin-top:10px;overflow-wrap:anywhere}
+.subscription-summary .subscription-next strong{font-size:21px}.subscription-next b{display:block;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.subscription-next b:last-child{font-family:var(--mono);color:var(--blue)}
+.subscription-breakdown{font-size:11px;color:var(--muted);margin:10px 0 18px}.subscription-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.subscription-card{min-width:0;padding:20px;border:1px solid var(--line);border-radius:17px;background:var(--panel)}
+.subscription-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.subscription-card h2{font-size:16px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.subscription-status{flex-shrink:0;font:700 9px/1.5 var(--mono);padding:4px 7px;border-radius:5px;background:var(--panel-2);color:var(--muted)}.subscription-status.active{color:var(--green)}.subscription-status.paused{color:var(--orange)}
+.subscription-amount{display:block;font:700 28px/1.5 var(--mono);margin:14px 0;overflow-wrap:anywhere}.subscription-amount small{font-size:11px;color:var(--muted)}
+.subscription-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.subscription-details div{min-width:0}.subscription-details dt{font:700 9px/1.6 var(--mono);color:var(--muted)}.subscription-details dd{font-size:12px;margin:3px 0 0;overflow-wrap:anywhere}
+.subscription-memo{font-size:12px;line-height:1.7;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:14px 0}
+.subscription-actions{display:flex;align-items:center;gap:12px;margin-top:18px}.subscription-actions .secondary-button{margin:0;flex:1;width:auto}
+.subscription-recovery{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;margin:16px 0}
+.subscription-recovery>div{min-width:0}.subscription-recovery strong{display:block;font:700 22px/1.5 var(--mono);overflow-wrap:anywhere}.subscription-recovery strong small{font-size:10px;color:var(--muted)}.subscription-recovery b{font-size:12px;overflow-wrap:anywhere}
+.fixed-row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fixed-row-actions .row-edit{white-space:normal}
+@media(max-width:760px){.subscription-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.subscription-summary>div{padding:16px}.subscription-summary>div:nth-child(2){border-right:0}.subscription-summary>div:nth-child(-n+2){border-bottom:1px solid var(--line)}.subscription-summary strong{font-size:25px}.subscription-list{grid-template-columns:1fr}.subscription-card{padding:18px}.subscription-heading>.secondary-button{font-size:12px}.bottom-nav button{font-size:9px;letter-spacing:0}.subscription-recovery{gap:12px}.fixed-row-actions{grid-column:1/-1;justify-content:flex-end}}
+@media(max-width:360px){.bottom-nav button{font-size:8px;padding:2px}.subscription-card-head{align-items:flex-start}.subscription-status{font-size:8px}.subscription-summary>div{padding:14px}.subscription-summary .subscription-next strong{font-size:17px}}

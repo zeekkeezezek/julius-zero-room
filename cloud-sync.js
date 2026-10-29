@@ -7,7 +7,7 @@ const PENDING_PREFIX='julius_zero_room_v3_pending_';
 const LAST_SYNC_PREFIX='julius_zero_room_v3_last_sync_';
 const SAFETY_KEY='julius_zero_room_cloud_safety_backup';
 const SAVE_DELAY=700;
-const TYPES={days:'days',purchases:'purchases',stoppedUrges:'urges',recoverySnapshots:'recovery',monthlyReality:'reality',fixedCommitments:'fixedCommitments',goalFunds:'goalFunds',goalFundTransactions:'goalFundTransactions'};
+const TYPES={days:'days',purchases:'purchases',stoppedUrges:'urges',recoverySnapshots:'recovery',monthlyReality:'reality',fixedCommitments:'fixedCommitments',goalFunds:'goalFunds',goalFundTransactions:'goalFundTransactions',subscriptions:'subscriptions'};
 const state={configured:false,auth:null,db:null,user:null,base:null,metaRef:null,legacyRef:null,listeners:[],active:false,initialized:false,saving:false,starting:false,retryTimer:null,pending:{},lastLocal:clean(Z.getData()),timer:null,status:'local',label:'端末保存',error:'',cache:'準備中',lastSyncAt:0,generation:0,deviceId:getDeviceId()};
 
 function getDeviceId(){let value=localStorage.getItem(DEVICE_KEY);if(!value){value=`zero_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;localStorage.setItem(DEVICE_KEY,value)}return value}
@@ -63,7 +63,7 @@ function failed(error){setStatus(navigator.onLine?'error':'offline',navigator.on
 
 function stripCloudFields(record){const value=clean(record||{});delete value.deleted;delete value.updatedAtServer;delete value.writerId;return value}
 function bundlePayload(raw,updatedAt=0){
-  const payload={version:7,days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},fixedCommitments:[],goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:Number(updatedAt)||0};
+  const payload={version:7,subscriptionsVersion:1,subscriptions:[],days:{},purchases:[],stoppedUrges:[],recoverySnapshots:[],monthlyReality:{},fixedCommitments:[],goalFunds:[],goalFundTransactions:[],syncTests:[],updatedAt:Number(updatedAt)||0};
   for(const[type,map]of Object.entries(raw)){for(const[id,record]of Object.entries(map||{})){payload.updatedAt=Math.max(payload.updatedAt,Number(record.updatedAt)||0);if(record.deleted)continue;const value=stripCloudFields(record);if(type==='days'||type==='monthlyReality')payload[type][id]=value;else payload[type].push(value)}}return Z.normalize(payload);
 }
 async function readCollection(type){const snap=await state.base.collection(TYPES[type]).get({source:'server'}),map={};snap.forEach(doc=>{map[doc.id]=doc.data()});return map}
@@ -150,6 +150,16 @@ async function mirrorLocalToCloud(local,remotePayload){
   for(const [key,op] of Object.entries(pendingAtStart)){if(state.pending[key]===op)delete state.pending[key]}
   savePending();state.lastSyncAt=Date.now();saveLastSync();
 }
+function hydrateUnknownSubscriptions(remote){
+  const local=clean(Z.getData());if(local.subscriptionsVersion===1)return null;
+  // An older app never read this collection. Its newer purchase timestamp must not delete unseen contracts.
+  const merged=Object.fromEntries((local.subscriptions||[]).map(item=>[item.id,item]));
+  for(const [id,record] of Object.entries(remote.raw?.subscriptions||{})){
+    if(merged[id]&&timestamp(merged[id].updatedAt)>timestamp(record.updatedAt))continue;
+    if(record.deleted)delete merged[id];else merged[id]=stripCloudFields(record);
+  }
+  const items=Object.values(merged);Z.replaceData({...local,subscriptions:items,subscriptionsVersion:1});return items;
+}
 async function begin(user){
   if(state.starting||state.saving)return;
   clearTimeout(state.timer);clearTimeout(state.retryTimer);stopListeners();
@@ -159,6 +169,7 @@ async function begin(user){
   state.lastLocal=clean(Z.getData());setStatus('saving','SYNCING');
   try{
     const remote=await readInitialRemote();if(generation!==state.generation)return;
+    const hydratedSubscriptions=hydrateUnknownSubscriptions(remote);
     const local=clean(Z.getData()),localTime=payloadTime(local),remoteTime=payloadTime(remote.payload);
     const same=contentHash(local)===contentHash(remote.payload);
     // Empty, never-saved devices use timestamp 0. A deliberately emptied dataset keeps its edit time.
@@ -175,6 +186,12 @@ async function begin(user){
       state.pending={};savePending();
       Z.replaceData({...local,updatedAt:Math.max(localTime,remoteTime)});
       if(remote.source==='legacy')await mirrorLocalToCloud(Z.getData(),emptyPayload());
+    }
+    if(hydratedSubscriptions){
+      // Keep contracts entered locally while the first cloud read was pending, even if the other ledger wins.
+      const current=clean(Z.getData()),merged=Object.fromEntries(current.subscriptions.map(item=>[item.id,item]));
+      for(const item of hydratedSubscriptions)if(!merged[item.id]||timestamp(item.updatedAt)>timestamp(merged[item.id].updatedAt))merged[item.id]=item;
+      state.lastLocal=current;Z.replaceData({...current,subscriptions:Object.values(merged),subscriptionsVersion:1});queueDiff();
     }
     if(generation===state.generation)activate();
   }catch(error){if(generation===state.generation)failed(error)}
