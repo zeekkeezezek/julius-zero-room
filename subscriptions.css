@@ -16,6 +16,9 @@
 .subscription-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}.subscription-details div{min-width:0}.subscription-details dt{font:700 9px/1.6 var(--mono);color:var(--muted)}.subscription-details dd{font-size:12px;margin:3px 0 0;overflow-wrap:anywhere}
 .subscription-memo{font-size:12px;line-height:1.7;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;margin:14px 0}
 .subscription-actions{display:flex;align-items:center;gap:12px;margin-top:18px}.subscription-actions .secondary-button{margin:0;flex:1;width:auto}
+.subscription-recorded{margin-top:16px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);font-size:11px;line-height:1.7}.subscription-recorded b,.subscription-recorded span{display:block;overflow-wrap:anywhere}.subscription-recorded.paid b{color:var(--green)}.subscription-recorded.unpaid{color:var(--muted)}.subscription-duplicate{color:var(--orange)}
+.subscription-payment-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);font-size:12px}.subscription-payment-row time{overflow-wrap:anywhere}.subscription-payment-row strong{font-family:var(--mono)}
+#subscriptionPaymentsTitle{overflow-wrap:anywhere}
 .subscription-recovery{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px;margin:16px 0}
 .subscription-recovery>div{min-width:0}.subscription-recovery strong{display:block;font:700 22px/1.5 var(--mono);overflow-wrap:anywhere}.subscription-recovery strong small{font-size:10px;color:var(--muted)}.subscription-recovery b{font-size:12px;overflow-wrap:anywhere}
 .fixed-row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fixed-row-actions .row-edit{white-space:normal}

@@ -12,13 +12,13 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-zero-v04-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-zero-v04-180.png">
-  <link rel="stylesheet" href="./styles.css?v=0.15.0">
-  <link rel="stylesheet" href="./theme.css?v=0.15.0">
-  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.15.0">
-  <link rel="stylesheet" href="./feedback.css?v=0.15.0">
-  <link rel="stylesheet" href="./help.css?v=0.15.0">
-  <link rel="stylesheet" href="./subscriptions.css?v=0.15.0">
-  <script src="./theme.js?v=0.15.0"></script>
+  <link rel="stylesheet" href="./styles.css?v=0.15.1">
+  <link rel="stylesheet" href="./theme.css?v=0.15.1">
+  <link rel="stylesheet" id="lightThemeStyle" href="./light.css?v=0.15.1">
+  <link rel="stylesheet" href="./feedback.css?v=0.15.1">
+  <link rel="stylesheet" href="./help.css?v=0.15.1">
+  <link rel="stylesheet" href="./subscriptions.css?v=0.15.1">
+  <script src="./theme.js?v=0.15.1"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -368,7 +368,7 @@
         <label class="secondary-button file-button">JSONを読み込む<input id="importInput" type="file" accept="application/json"></label>
         <button type="button" class="help-button" data-help="backup" aria-label="バックアップと削除の説明" aria-haspopup="dialog" aria-controls="helpDialog">?</button>
       </div>
-      <div class="version-line">JULIUS ZERO ROOM · v0.15.0 CLOUD SYNC</div>
+      <div class="version-line">JULIUS ZERO ROOM · v0.15.1 CLOUD SYNC</div>
     </div>
   </div>
 
@@ -446,6 +446,9 @@
       </form>
     </div>
   </div>
+  <div class="modal" id="subscriptionPaymentsModal" role="dialog" aria-modal="true" aria-labelledby="subscriptionPaymentsTitle">
+    <div class="modal-card compact-card"><button type="button" class="modal-close" data-close aria-label="閉じる">×</button><h2 class="functional-title" id="subscriptionPaymentsTitle">支払い記録</h2><div id="subscriptionPaymentsList"></div></div>
+  </div>
   <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpDialogTitle">
     <div class="help-dialog-head"><h2 id="helpDialogTitle"></h2><button type="button" class="help-dismiss" id="helpDialogClose" aria-label="説明を閉じる" autofocus>×</button></div>
     <div id="helpDialogBody"></div>
@@ -453,17 +456,17 @@
   <div class="toast" id="toast" role="status"></div>
   <div class="hold-undo" id="holdUndo" role="status" hidden><span>HOLDの結果を変更した</span><button type="button" id="undoHoldResult">取り消す</button></div>
 
-  <script defer src="./subscription-model.js?v=0.15.0"></script>
-  <script defer src="./app.js?v=0.15.0"></script>
-  <script defer src="./fund.js?v=0.15.0"></script>
-  <script defer src="./subscriptions.js?v=0.15.0"></script>
-  <script defer src="./feedback.js?v=0.15.0"></script>
-  <script defer src="./brake.js?v=0.15.0"></script>
-  <script defer src="./help.js?v=0.15.0"></script>
+  <script defer src="./subscription-model.js?v=0.15.1"></script>
+  <script defer src="./app.js?v=0.15.1"></script>
+  <script defer src="./fund.js?v=0.15.1"></script>
+  <script defer src="./subscriptions.js?v=0.15.1"></script>
+  <script defer src="./feedback.js?v=0.15.1"></script>
+  <script defer src="./brake.js?v=0.15.1"></script>
+  <script defer src="./help.js?v=0.15.1"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script defer src="./firebase-config.js"></script>
-  <script defer src="./cloud-sync.js?v=0.15.0"></script>
+  <script defer src="./cloud-sync.js?v=0.15.1"></script>
 </body>
 </html>

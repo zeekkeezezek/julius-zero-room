@@ -32,5 +32,14 @@ function totals(items,today){
  const upcoming=active.map(item=>({item,date:nextPayment(item,today)})).filter(row=>row.date).sort((a,b)=>a.date.localeCompare(b.date)||a.item.name.localeCompare(b.item.name)||a.item.id.localeCompare(b.item.id));
  return{active:active.length,monthly,yearly,monthlyEquivalent:Math.round(monthly+yearly/12+otherYearly/12),yearlyEstimate:Math.round(monthly*12+yearly+otherYearly),next:upcoming[0]||null,upcoming};
 }
-window.ZeroSubscriptionModel={normalize,nextPayment,totals,validDate};
+function paymentPeriod(item,date){
+ if(!validDate(date))return null;
+ if(item.cycle==='monthly')return{key:'month:'+date.slice(0,7),label:`${date.slice(0,4)}年${Number(date.slice(5,7))}月分`};
+ if(item.cycle==='yearly')return{key:'year:'+date.slice(0,4),label:`${date.slice(0,4)}年分`};
+ if(item.cycle!=='other'||!validDate(item.renewalDate)||!Number.isInteger(item.intervalDays)||item.intervalDays<1)return null;
+ const utc=value=>{const[y,m,d]=parts(value);return Date.UTC(y,m-1,d)},dayMs=86400000,index=Math.floor((utc(date)-utc(item.renewalDate))/dayMs/item.intervalDays),start=new Date(utc(item.renewalDate)+index*item.intervalDays*dayMs),end=new Date(start.getTime()+(item.intervalDays-1)*dayMs);
+ const format=value=>key(value.getUTCFullYear(),value.getUTCMonth()+1,value.getUTCDate());
+ return{key:`days:${item.renewalDate}:${item.intervalDays}:${index}`,label:`${format(start).replaceAll('-','/')}〜${format(end).slice(5).replace('-','/')}分`};
+}
+window.ZeroSubscriptionModel={normalize,nextPayment,totals,validDate,paymentPeriod};
 })();

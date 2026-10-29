@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const APP_VERSION='0.15.0';
+const APP_VERSION='0.15.1';
 const STORAGE_KEY='julius_zero_room_v1';
 const REALITY_MIGRATION_KEY='julius_zero_room_v05_reality_notice_seen';
 const START_DATE='2026-09-01';
@@ -177,14 +177,14 @@ function isMigratedFixed(id){return data.subscriptions.some(item=>item.sourceFix
 function fixedMonthItems(month){return data.fixedCommitments.filter(item=>item.month===month&&!isMigratedFixed(item.id)).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))}
 function fixedItemPurchases(item){return data.purchases.filter(p=>p.purpose==='fixed'&&p.fixedCommitmentId===item.id&&p.date.slice(0,7)===item.month)}
 function fixedTotals(month){
-  const items=fixedMonthItems(month),purchases=data.purchases.filter(p=>p.purpose==='fixed'&&!p.subscriptionId&&!String(p.fixedCommitmentId||'').startsWith('subscription:')&&!isMigratedFixed(p.fixedCommitmentId)&&p.date.slice(0,7)===month),service=items.filter(i=>i.category==='service').reduce((sum,i)=>sum+i.amount,0),gamePass=items.filter(i=>i.category==='game-pass').reduce((sum,i)=>sum+i.amount,0);
+  const items=fixedMonthItems(month),purchases=data.purchases.filter(p=>p.purpose==='fixed'&&p.date.slice(0,7)===month),service=items.filter(i=>i.category==='service').reduce((sum,i)=>sum+i.amount,0),gamePass=items.filter(i=>i.category==='game-pass').reduce((sum,i)=>sum+i.amount,0);
   return{registered:service+gamePass,service,gamePass,recorded:purchases.reduce((sum,p)=>sum+p.amount,0)};
 }
 function renderFixedCommitments(){
   const key=realityMonthValue(),totals=fixedTotals(key),items=fixedMonthItems(key);
   document.getElementById('fixedMonthLabel').textContent=key.replace('-',' / ');
-  document.getElementById('plannedFixedSummary').innerHTML=`<span>登録済みの固定支出</span><strong>${money(totals.registered)}</strong><small>固定サービス ${money(totals.service)} · 固定月パス ${money(totals.gamePass)}</small>`;
-  document.getElementById('fixedTotals').innerHTML=`<div><span>登録額</span><strong>${money(totals.registered)}</strong></div><div><span>記録済み</span><strong>${money(totals.recorded)}</strong></div>`;
+  document.getElementById('plannedFixedSummary').innerHTML=`<span>月別の手動購入予定</span><strong>${money(totals.registered)}</strong><small>固定サービス ${money(totals.service)} · 固定月パス ${money(totals.gamePass)}</small>`;
+  document.getElementById('fixedTotals').innerHTML=`<div><span>予定額（手動分）</span><strong>${money(totals.registered)}</strong></div><div><span>記録済み（サブスク含む）</span><strong>${money(totals.recorded)}</strong></div>`;
   document.getElementById('fixedList').innerHTML=items.length?items.map(item=>{const records=fixedItemPurchases(item),actual=records.reduce((sum,p)=>sum+p.amount,0);return`<div class="fixed-row"><div><b>${escapeHtml(item.name)}</b><small>${fixedCategoryLabel(item.category)}</small><small>${records.length?'記録済み':'未記録'}${records.length?` · 実績 ${money(actual)}`:''}${records.length>1?' · 複数記録あり（履歴で確認）':''}</small></div><strong>${money(item.amount)}</strong><div class="fixed-row-actions">${item.category==='service'?`<button class="row-edit" type="button" data-migrate-fixed="${escapeHtml(item.id)}">SUBSCRIPTIONSへ移動</button>`:''}<button class="row-edit" type="button" data-edit-fixed="${escapeHtml(item.id)}">編集</button></div></div>`}).join(''):'<p class="fixed-empty">この月の事前登録項目はない。</p>';
   if(!editingFixedId&&!document.getElementById('fixedMonth').value)document.getElementById('fixedMonth').value=key;
 }
@@ -221,8 +221,8 @@ function refreshFixedPicker(){
   document.getElementById('fixedPurchaseFields').hidden=!isFixed;select.required=isFixed;select.disabled=!isFixed;
   if(!isFixed)return;
   const items=[...fixedMonthItems(key),...(window.ZeroSubscriptions?.purchaseOptions()||[])],options=items.map(item=>{const used=!item.subscriptionId&&fixedItemPurchases(item).some(p=>p.id!==editingPurchaseId);return`<option value="${escapeHtml(item.id)}"${used?' disabled':''}>${escapeHtml(item.name)} · ${money(item.amount)}${item.subscriptionId?' · SUBSCRIPTION':''}${used?' · 記録済み':''}</option>`});
-  const orphan=editing?.purpose==='fixed'&&editing.date.slice(0,7)===key&&!items.some(i=>i.id===editing.fixedCommitmentId);
-  if(orphan)options.push(`<option value="${escapeHtml(editing.fixedCommitmentId)}">${escapeHtml(editing.fixedName||editing.name)} · 元の登録は削除／対象月変更済み</option>`);
+  const orphan=editing?.purpose==='fixed'&&(editing.date.slice(0,7)===key||!!window.ZeroSubscriptions?.fromFixedId(editing.fixedCommitmentId))&&!items.some(i=>i.id===editing.fixedCommitmentId);
+  if(orphan)options.push(`<option value="${escapeHtml(editing.fixedCommitmentId)}">${escapeHtml(editing.fixedName||editing.name)} · ${window.ZeroSubscriptions?.fromFixedId(editing.fixedCommitmentId)?'SUBSCRIPTION · 移動元の記録':'元の登録は削除／対象月変更済み'}</option>`);
   select.innerHTML='<option value="">支払った登録項目を選ぶ</option>'+options.join('');
   select.value=oldSelection;
   document.getElementById('fixedPurchaseHelp').textContent=items.length?'':'この月の事前登録項目なし';
@@ -297,7 +297,7 @@ function savePurchase(event){
   const fixedId=String(form.get('fixedCommitmentId')||''),oldFixed=data.purchases.find(p=>p.id===editingPurchaseId),subscription=window.ZeroSubscriptions?.fromFixedId(fixedId),fixed=subscription?{category:'service',name:subscription.name}:data.fixedCommitments.find(i=>i.id===fixedId&&i.month===date.slice(0,7));
   const retained=oldFixed?.purpose==='fixed'&&fixedId===oldFixed.fixedCommitmentId&&date.slice(0,7)===oldFixed.date.slice(0,7);
   if(purpose==='fixed'&&(!fixed&&!retained)){document.getElementById('purchaseError').textContent='購入月の事前登録済み固定項目を選んでくれ。未登録の単発購入は趣味・衝動買いだ。';return}
-  if(purpose==='fixed'&&(subscription?window.ZeroSubscriptions.paymentOn(subscription,date,editingPurchaseId):data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7)))){document.getElementById('purchaseError').textContent='この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
+  if(purpose==='fixed'&&(subscription?window.ZeroSubscriptions.paymentInPeriod(subscription,date,editingPurchaseId):data.purchases.some(p=>p.id!==editingPurchaseId&&p.purpose==='fixed'&&p.fixedCommitmentId===fixedId&&p.date.slice(0,7)===date.slice(0,7)))){document.getElementById('purchaseError').textContent=subscription?'この期間は記録済みだ。サブスクの「記録を見る・訂正」から確認してくれ。':'この項目は記録済みだ。追加購入へ転用せず、訂正は「履歴」から行ってくれ。';return}
   if(editingPurchaseId&&!oldFixed){document.getElementById('purchaseError').textContent='この記録は別端末で削除された。履歴を確認してくれ。';return}
   if(purchaseHoldContext){
     const hold=data.stoppedUrges.find(item=>item.id===purchaseHoldContext.id);
